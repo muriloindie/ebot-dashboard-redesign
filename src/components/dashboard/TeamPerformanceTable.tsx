@@ -1,0 +1,54 @@
+import { Star } from "lucide-react";
+import { teamPerformance } from "@/data/dashboardMock";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { StatusPill } from "@/components/ui/StatusPill";
+
+export function TeamPerformanceTable() {
+  return (
+    <GlassCard className="overflow-hidden p-5 lg:p-6">
+      <div className="mb-5">
+        <h3 className="text-xl font-extrabold tracking-[-0.03em] text-clinical-dark">Equipe e SLA</h3>
+        <p className="mt-2 text-sm leading-6 text-clinical-muted">Performance da recepção e responsáveis por atendimento humano.</p>
+      </div>
+      <div className="clinical-scrollbar overflow-x-auto">
+        <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left">
+          <thead>
+            <tr className="text-xs font-extrabold uppercase tracking-[0.12em] text-clinical-muted/70">
+              <th className="border-b border-clinical-blue/10 pb-3">Atendente</th>
+              <th className="border-b border-clinical-blue/10 pb-3">Status</th>
+              <th className="border-b border-clinical-blue/10 pb-3">Atendimentos assumidos</th>
+              <th className="border-b border-clinical-blue/10 pb-3">Tempo médio</th>
+              <th className="border-b border-clinical-blue/10 pb-3">Avaliação</th>
+              <th className="border-b border-clinical-blue/10 pb-3 text-right">SLA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teamPerformance.map((member) => (
+              <tr key={member.name} className="text-sm font-semibold text-clinical-slate">
+                <td className="border-b border-clinical-blue/10 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-2xl bg-clinical-blue/10 text-xs font-extrabold text-clinical-blue">
+                      {member.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="font-extrabold text-clinical-dark">{member.name}</span>
+                  </div>
+                </td>
+                <td className="border-b border-clinical-blue/10 py-4"><StatusPill tone={member.tone}>{member.status}</StatusPill></td>
+                <td className="border-b border-clinical-blue/10 py-4 font-extrabold text-clinical-dark">{member.assumed}</td>
+                <td className="border-b border-clinical-blue/10 py-4">{member.response}</td>
+                <td className="border-b border-clinical-blue/10 py-4">
+                  <span className="inline-flex items-center gap-1 font-extrabold text-clinical-dark">
+                    <Star className="size-4 fill-clinical-orange text-clinical-orange" /> {member.rating}
+                  </span>
+                </td>
+                <td className="border-b border-clinical-blue/10 py-4 text-right">
+                  <span className="rounded-full bg-clinical-green/10 px-3 py-1.5 text-xs font-extrabold text-clinical-green">{member.sla}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </GlassCard>
+  );
+}
