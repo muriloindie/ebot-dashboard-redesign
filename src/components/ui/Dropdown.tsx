@@ -58,13 +58,13 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
       <button
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          "flex h-10 items-center gap-2 rounded-2xl border px-3.5 text-xs font-bold transition duration-300",
+          "flex h-11 items-center gap-2 rounded-2xl border px-3.5 text-[14px] font-bold transition duration-300 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
           open
             ? "border-clinical-blue/30 bg-clinical-blue/10 text-clinical-blue"
-            : "border-clinical-blue/10 bg-white/65 text-clinical-slate hover:border-clinical-blue/25 hover:text-clinical-blue"
+            : "border-clinical-border/[0.12] bg-clinical-surface/65 text-clinical-slate hover:border-clinical-blue/25 hover:text-clinical-blue"
         )}
       >
-        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-clinical-muted/70">{label}</span>
+        <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-clinical-muted/80">{label}</span>
         <span className="text-clinical-dark">{value}</span>
         <ChevronDown className={cn("size-3.5 shrink-0 transition", open ? "rotate-180 text-clinical-blue" : "text-clinical-muted")} />
       </button>
@@ -74,7 +74,7 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
             <div
               ref={menuRef}
               style={{ position: "fixed", top: coords.top, left: coords.left, zIndex: 9999 }}
-              className="min-w-[180px] origin-top rounded-2xl border border-white/60 bg-white/95 p-2 shadow-clinical backdrop-blur-xl"
+              className="min-w-[190px] origin-top rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface/95 p-2 shadow-clinical backdrop-blur-xl dark:border-white/[0.08]"
             >
               {options.map((option) => {
                 const active = value === option;
@@ -87,7 +87,7 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
                     }}
                     className={cn(
                       "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold transition",
-                      active ? "bg-clinical-blue/10 text-clinical-blue" : "text-clinical-slate hover:bg-clinical-blue/8 hover:text-clinical-blue"
+                      active ? "bg-clinical-blue/10 text-clinical-blueText" : "text-clinical-slate hover:bg-clinical-blue/[0.08] hover:text-clinical-blue"
                     )}
                   >
                     {option}

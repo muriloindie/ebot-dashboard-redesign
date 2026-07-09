@@ -133,7 +133,7 @@ export function ExportReportModal({ open, onClose }: { open: boolean; onClose: (
               onClick={() => setSelected(format.id)}
               className={cn(
                 "flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition",
-                active ? "border-clinical-blue bg-clinical-blue/8" : "border-clinical-blue/10 bg-white/60 hover:bg-white"
+                active ? "border-clinical-blue bg-clinical-blue/[0.08]" : "border-clinical-border/[0.10] bg-clinical-surface/60 hover:bg-clinical-surface"
               )}
             >
               <div
@@ -146,7 +146,7 @@ export function ExportReportModal({ open, onClose }: { open: boolean; onClose: (
               </div>
               <div>
                 <p className={cn("text-sm font-extrabold", active ? "text-clinical-blue" : "text-clinical-dark")}>{format.label}</p>
-                <p className="text-xs font-medium text-clinical-muted">{format.description}</p>
+                <p className="text-[13px] font-medium text-clinical-muted">{format.description}</p>
               </div>
             </button>
           );
@@ -157,7 +157,7 @@ export function ExportReportModal({ open, onClose }: { open: boolean; onClose: (
         <button
           onClick={onClose}
           disabled={exporting}
-          className="flex-1 rounded-2xl border border-clinical-blue/15 bg-white px-4 py-3 text-sm font-bold text-clinical-slate transition hover:bg-clinical-blue/10 disabled:opacity-50"
+          className="flex-1 rounded-2xl border border-clinical-blue/15 bg-clinical-surface px-4 py-3 text-sm font-bold text-clinical-slate transition hover:bg-clinical-blue/10 disabled:opacity-50"
         >
           Cancelar
         </button>

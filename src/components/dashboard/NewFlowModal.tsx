@@ -50,17 +50,17 @@ export function NewFlowModal({ open, onClose }: { open: boolean; onClose: () => 
     <Modal open={open} onClose={onClose} title="Criar novo fluxo" className="max-w-lg">
       <div className="space-y-5">
         <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-clinical-muted">Nome do fluxo</label>
+          <label className="mb-2 block text-[13px] font-bold uppercase tracking-[0.10em] text-clinical-muted">Nome do fluxo</label>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Ex: Confirmação de consulta"
-            className="w-full rounded-2xl border border-clinical-blue/15 bg-white/70 px-4 py-3 text-sm font-semibold text-clinical-dark outline-none placeholder:text-clinical-muted/60 focus:border-clinical-blue/35 focus:bg-white"
+            className="w-full rounded-2xl border border-clinical-blue/15 bg-clinical-surface/70 px-4 py-3 text-sm font-semibold text-clinical-dark outline-none placeholder:text-clinical-muted/60 focus:border-clinical-blue/35 focus:bg-clinical-surface"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-clinical-muted">Gatilho</label>
+          <label className="mb-2 block text-[13px] font-bold uppercase tracking-[0.10em] text-clinical-muted">Gatilho</label>
           <div className="grid gap-2 sm:grid-cols-3">
             {triggers.map((item) => {
               const Icon = item.icon;
@@ -71,11 +71,11 @@ export function NewFlowModal({ open, onClose }: { open: boolean; onClose: () => 
                   onClick={() => setTrigger(item.id)}
                   className={cn(
                     "flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition",
-                    active ? "border-clinical-blue bg-clinical-blue/8" : "border-clinical-blue/10 bg-white/60 hover:bg-white"
+                    active ? "border-clinical-blue bg-clinical-blue/[0.08]" : "border-clinical-border/[0.10] bg-clinical-surface/60 hover:bg-clinical-surface"
                   )}
                 >
                   <Icon className={cn("size-5", active ? "text-clinical-blue" : "text-clinical-muted")} />
-                  <span className={cn("text-xs font-bold", active ? "text-clinical-blue" : "text-clinical-slate")}>{item.label}</span>
+                  <span className={cn("text-[13px] font-bold", active ? "text-clinical-blueText" : "text-clinical-slate")}>{item.label}</span>
                 </button>
               );
             })}
@@ -83,12 +83,12 @@ export function NewFlowModal({ open, onClose }: { open: boolean; onClose: () => 
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-clinical-muted">Canal</label>
+          <label className="mb-2 block text-[13px] font-bold uppercase tracking-[0.10em] text-clinical-muted">Canal</label>
           <div className="relative">
             <select
               value={channel}
               onChange={(event) => setChannel(event.target.value)}
-              className="w-full appearance-none rounded-2xl border border-clinical-blue/15 bg-white/70 px-4 py-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/35 focus:bg-white"
+              className="w-full appearance-none rounded-2xl border border-clinical-blue/15 bg-clinical-surface/70 px-4 py-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/35 focus:bg-clinical-surface"
             >
               <option value="whatsapp">WhatsApp</option>
               <option value="webchat">Webchat</option>
@@ -99,7 +99,7 @@ export function NewFlowModal({ open, onClose }: { open: boolean; onClose: () => 
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-clinical-muted">Ações do fluxo</label>
+          <label className="mb-2 block text-[13px] font-bold uppercase tracking-[0.10em] text-clinical-muted">Ações do fluxo</label>
           <div className="space-y-2">
             {actions.map((action) => {
               const active = selectedActions.includes(action.id);
@@ -109,7 +109,7 @@ export function NewFlowModal({ open, onClose }: { open: boolean; onClose: () => 
                   onClick={() => toggleAction(action.id)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-sm font-semibold transition",
-                    active ? "border-clinical-blue bg-clinical-blue/8 text-clinical-blue" : "border-clinical-blue/10 bg-white/60 text-clinical-slate hover:bg-white"
+                    active ? "border-clinical-blue bg-clinical-blue/[0.08] text-clinical-blueText" : "border-clinical-border/[0.10] bg-clinical-surface/60 text-clinical-slate hover:bg-clinical-surface"
                   )}
                 >
                   {action.label}
@@ -125,7 +125,7 @@ export function NewFlowModal({ open, onClose }: { open: boolean; onClose: () => 
         <button
           onClick={onClose}
           disabled={saving || saved}
-          className="flex-1 rounded-2xl border border-clinical-blue/15 bg-white px-4 py-3 text-sm font-bold text-clinical-slate transition hover:bg-clinical-blue/10 disabled:opacity-50"
+          className="flex-1 rounded-2xl border border-clinical-blue/15 bg-clinical-surface px-4 py-3 text-sm font-bold text-clinical-slate transition hover:bg-clinical-blue/10 disabled:opacity-50"
         >
           Cancelar
         </button>

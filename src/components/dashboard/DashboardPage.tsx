@@ -63,18 +63,18 @@ export function DashboardPage() {
       <DashboardHeader />
       <SmartFilters />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
+      <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
         {metrics.map((metric) => (
           <MetricCard key={metric.id} metric={metric} icon={iconMap[metric.icon]} />
         ))}
       </section>
 
-      <section className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
+      <section className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(460px,0.72fr)]">
         <WaveLineChart />
         <AppointmentTimeline />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(380px,0.72fr)]">
         <AutomationInsights />
         <ContactReasons />
       </section>

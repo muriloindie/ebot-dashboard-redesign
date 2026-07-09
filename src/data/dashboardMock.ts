@@ -129,35 +129,62 @@ export const appointments = [
 export const automationInsights = [
   {
     icon: "ClipboardList",
+    category: "Automação sugerida",
+    highlight: "23 pacientes",
     title: "Preparo de exames recorrente",
-    description: "23 pacientes perguntaram sobre preparo de exames hoje.",
+    description: "23 pacientes perguntaram sobre preparo de exames hoje, principalmente no fim da tarde.",
     action: "Criar automação"
   },
   {
     icon: "Workflow",
+    category: "Oportunidades",
+    highlight: "12 conversas",
     title: "Fluxos repetitivos detectados",
-    description: "12 conversas poderiam virar fluxo automático.",
+    description: "12 conversas poderiam virar fluxo automático sem intervenção da recepção.",
     action: "Ver conversas"
   },
   {
     icon: "CalendarPlus",
+    category: "Risco de faltas",
+    highlight: "3 horários",
     title: "Encaixes recuperados",
-    description: "3 horários foram liberados após cancelamento.",
+    description: "3 horários foram liberados após cancelamento e podem ser preenchidos por lista de espera.",
     action: "Enviar campanha"
   },
   {
     icon: "AlertTriangle",
+    category: "Gargalos",
+    highlight: "17h às 19h",
     title: "Gargalo no fim do dia",
-    description: "Maior gargalo: confirmação de consultas entre 17h e 19h.",
+    description: "Pacientes repetiram dúvidas sobre preparo de exames entre 17h e 19h.",
     action: "Criar automação"
   }
 ];
 
+export const whatsappChannels = [
+  { id: "wa-main", name: "WhatsApp Principal", number: "+55 11 98765-2301", api: "API oficial", status: "Online", health: "online", lastSync: "agora" },
+  { id: "wa-schedule", name: "WhatsApp Agendamentos", number: "+55 11 97642-1188", api: "API oficial", status: "Online", health: "online", lastSync: "há 1 min" },
+  { id: "wa-finance", name: "WhatsApp Financeiro", number: "+55 11 95508-7741", api: "Padrão", status: "Atenção", health: "warning", lastSync: "há 18 min" }
+] as const;
+
+export const aiConnection = {
+  id: "ai-clinical-main",
+  name: "IA Atendimento Clinical",
+  provider: "OpenAI",
+  model: "GPT 5.5 Fast",
+  status: "Online",
+  health: "online",
+  accuracy: "94%",
+  latency: "1.2s",
+  context: "Base Ê-Bot + protocolos da clínica",
+  lastAction: "resumiu 18 conversas e sugeriu 4 automações"
+} as const;
+
 export const contactReasons = [
-  { label: "Agendamento", value: 34, color: "#2B9FE8" },
+  { label: "Agendamento", value: 34, color: "#3A9DCA" },
   { label: "Confirmação", value: 22, color: "#30A3A4" },
   { label: "Valores e convênios", value: 16, color: "#87A630" },
-  { label: "Preparo de exames", value: 11, color: "#2B9FE8" },
+  { label: "Preparo de exames", value: 11, color: "#3A9DCA" },
   { label: "Receita/documentos", value: 9, color: "#30A3A4" },
   { label: "Falar com humano", value: 8, color: "#F19D18" }
 ];

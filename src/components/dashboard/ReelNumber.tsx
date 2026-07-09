@@ -8,7 +8,7 @@ function easeOutCubic(x: number) {
   return 1 - Math.pow(1 - x, 3);
 }
 
-const FONT_SIZE = "text-[38px]";
+const FONT_SIZE = "text-[31px]";
 const DIGIT_HEIGHT = "h-[1.05em]";
 const LINE_HEIGHT = "leading-[1.05em]";
 
@@ -93,7 +93,7 @@ export function ReelNumber({ value, format }: { value: number; format: KpiFormat
         return (
           <span
             key={`u-${index}`}
-            className="ml-1 inline-block font-bebas text-[22px] leading-[1.4em] text-clinical-blue"
+            className="ml-1 inline-block font-bebas text-[18px] leading-[1.4em] text-clinical-blue"
           >
             {segment.value}
           </span>

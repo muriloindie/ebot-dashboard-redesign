@@ -8,7 +8,7 @@ export function EmptyState({ title = "Conteúdo em desenvolvimento" }: { title?:
         <Construction className="size-7" />
       </div>
       <h2 className="text-2xl font-bold text-clinical-dark">{title}</h2>
-      <p className="mt-3 max-w-md text-sm leading-6 text-clinical-muted">
+      <p className="mt-3 max-w-md text-[15px] leading-7 text-clinical-muted">
         Este módulo já tem navegação, estados visuais e shell preparados. A experiência completa será conectada em uma próxima fase.
       </p>
     </GlassCard>

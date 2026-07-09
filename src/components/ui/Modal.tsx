@@ -40,7 +40,7 @@ export function Modal({
     >
       <div
         className={cn(
-          "w-full max-w-lg rounded-[32px] border border-white/60 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl",
+          "w-full max-w-lg rounded-[32px] border border-clinical-border/[0.14] bg-clinical-surface/95 p-6 shadow-2xl backdrop-blur-2xl dark:border-white/[0.08]",
           className
         )}
         onClick={(event) => event.stopPropagation()}

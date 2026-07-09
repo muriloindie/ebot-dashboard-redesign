@@ -7,13 +7,13 @@ export function TeamPerformanceTable() {
   return (
     <GlassCard className="overflow-hidden p-5 lg:p-6">
       <div className="mb-5">
-        <h3 className="text-xl font-extrabold tracking-[-0.03em] text-clinical-dark">Equipe e SLA</h3>
-        <p className="mt-2 text-sm leading-6 text-clinical-muted">Performance da recepção e responsáveis por atendimento humano.</p>
+        <h3 className="text-[22px] font-extrabold tracking-[-0.03em] text-clinical-dark">Equipe e SLA</h3>
+        <p className="mt-2 text-[15px] leading-7 text-clinical-muted">Performance da recepção e responsáveis por atendimento humano.</p>
       </div>
       <div className="clinical-scrollbar overflow-x-auto">
         <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left">
           <thead>
-            <tr className="text-xs font-extrabold uppercase tracking-[0.12em] text-clinical-muted/70">
+            <tr className="text-[13px] font-extrabold uppercase tracking-[0.10em] text-clinical-muted/75">
               <th className="border-b border-clinical-blue/10 pb-3">Atendente</th>
               <th className="border-b border-clinical-blue/10 pb-3">Status</th>
               <th className="border-b border-clinical-blue/10 pb-3">Atendimentos assumidos</th>
@@ -24,10 +24,10 @@ export function TeamPerformanceTable() {
           </thead>
           <tbody>
             {teamPerformance.map((member) => (
-              <tr key={member.name} className="text-sm font-semibold text-clinical-slate">
+              <tr key={member.name} className="text-[14px] font-semibold text-clinical-slate">
                 <td className="border-b border-clinical-blue/10 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-2xl bg-clinical-blue/10 text-xs font-extrabold text-clinical-blue">
+                    <div className="flex size-10 items-center justify-center rounded-2xl bg-clinical-blue/10 text-[13px] font-extrabold text-clinical-blueText">
                       {member.name.slice(0, 2).toUpperCase()}
                     </div>
                     <span className="font-extrabold text-clinical-dark">{member.name}</span>
@@ -42,7 +42,7 @@ export function TeamPerformanceTable() {
                   </span>
                 </td>
                 <td className="border-b border-clinical-blue/10 py-4 text-right">
-                  <span className="rounded-full bg-clinical-green/10 px-3 py-1.5 text-xs font-extrabold text-clinical-green">{member.sla}</span>
+                  <span className="rounded-full bg-clinical-green/10 px-3 py-1.5 text-[13px] font-extrabold text-clinical-green">{member.sla}</span>
                 </td>
               </tr>
             ))}

@@ -63,7 +63,7 @@ export function Tooltip({ content, children, side = "right", className }: Toolti
                 zIndex: 9999,
                 transform
               }}
-              className="pointer-events-none whitespace-nowrap rounded-xl border border-white/60 bg-clinical-dark px-3 py-2 text-xs font-bold text-white shadow-clinical backdrop-blur-xl"
+              className="pointer-events-none whitespace-nowrap rounded-xl border border-white/10 bg-clinical-charcoal px-3 py-2 text-[13px] font-bold text-white shadow-clinical backdrop-blur-xl"
             >
               {content}
             </div>,

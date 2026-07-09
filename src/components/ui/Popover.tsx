@@ -113,13 +113,13 @@ export function Popover({
               onClick={(event) => event.stopPropagation()}
               style={menuStyle}
               className={cn(
-                "rounded-[24px] border border-white/60 bg-white/95 p-4 shadow-clinical backdrop-blur-xl",
+                "rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/95 p-4 shadow-clinical backdrop-blur-xl dark:border-white/[0.08]",
                 !matchTriggerWidth && width,
                 className
               )}
             >
               <span
-                className="absolute -top-1 size-2.5 -translate-x-1/2 rotate-45 border-l border-t border-white/60 bg-white/95"
+                className="absolute -top-1 size-2.5 -translate-x-1/2 rotate-45 border-l border-t border-clinical-border/[0.14] bg-clinical-surface/95 dark:border-white/[0.08]"
                 style={{ left: coords.arrowLeft }}
               />
               <div className="relative z-10">{children}</div>

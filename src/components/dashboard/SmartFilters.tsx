@@ -85,9 +85,9 @@ export function SmartFilters() {
 
   return (
     <>
-      <section className="glass-card rounded-[28px] p-3">
+      <section className="glass-card rounded-[28px] p-4">
         <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center">
-          <div className="flex min-w-[160px] items-center gap-2 px-2 text-sm font-extrabold text-clinical-dark">
+          <div className="flex min-w-[160px] items-center gap-2 px-2 text-[15px] font-extrabold text-clinical-dark">
             <span className="flex size-9 items-center justify-center rounded-xl bg-clinical-blue/10 text-clinical-blue">
               <SlidersHorizontal className="size-4" />
             </span>
@@ -108,13 +108,13 @@ export function SmartFilters() {
 
           <button
             onClick={() => setDateModalOpen(true)}
-            className="ml-auto flex h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-dashed border-clinical-blue/25 bg-white/60 px-4 text-xs font-extrabold text-clinical-blue transition hover:bg-clinical-blue/10"
+            className="ml-auto flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl border border-dashed border-clinical-blue/25 bg-clinical-surface/60 px-4 text-[14px] font-extrabold text-clinical-blueText transition hover:bg-clinical-blue/10 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
           >
             <Calendar className="size-4" />
             {startDate && endDate ? `${formatDate(startDate)} - ${formatDate(endDate)}` : "Período"}
           </button>
         </div>
-        <div className="mt-2 flex items-center gap-2 px-2 text-[11px] font-semibold text-clinical-muted/75">
+        <div className="mt-3 flex items-center gap-2 px-2 text-[13px] font-semibold text-clinical-muted/80">
           <Filter className="size-3.5" /> Estado local do protótipo. Aqui serão conectados query params e chamadas ao backend.
         </div>
       </section>
@@ -134,7 +134,7 @@ export function SmartFilters() {
           >
             <span className="text-lg">‹</span>
           </button>
-          <p className="text-sm font-extrabold text-clinical-dark">
+          <p className="text-base font-extrabold text-clinical-dark">
             {MONTHS[currentMonth]} {currentYear}
           </p>
           <button
@@ -152,7 +152,7 @@ export function SmartFilters() {
           </button>
         </div>
 
-        <div className="mb-3 grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase tracking-[0.1em] text-clinical-muted">
+        <div className="mb-3 grid grid-cols-7 gap-1 text-center text-[13px] font-bold uppercase tracking-[0.08em] text-clinical-muted">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
             <span key={day}>{day}</span>
           ))}
@@ -181,13 +181,13 @@ export function SmartFilters() {
         </div>
 
         <div className="mb-5 rounded-2xl border border-clinical-blue/10 bg-clinical-snow p-4">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-clinical-muted">Período selecionado</p>
+          <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.10em] text-clinical-muted">Período selecionado</p>
           <div className="flex items-center justify-between text-sm font-bold text-clinical-dark">
             <span>{formatDate(startDate)}</span>
             <span className="text-clinical-muted">até</span>
             <span>{formatDate(endDate)}</span>
           </div>
-          <p className="mt-2 text-xs font-semibold text-clinical-blue">
+          <p className="mt-2 text-[13px] font-semibold text-clinical-blueText">
             {selecting === "start" ? "Selecione a data inicial" : "Selecione a data final"}
           </p>
         </div>
@@ -199,7 +199,7 @@ export function SmartFilters() {
               setEndDate(null);
               setSelecting("start");
             }}
-            className="flex-1 rounded-2xl border border-clinical-blue/15 bg-white px-4 py-3 text-sm font-bold text-clinical-slate transition hover:bg-clinical-blue/10"
+            className="flex-1 rounded-2xl border border-clinical-blue/15 bg-clinical-surface px-4 py-3 text-sm font-bold text-clinical-slate transition hover:bg-clinical-blue/10 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
           >
             Limpar
           </button>
