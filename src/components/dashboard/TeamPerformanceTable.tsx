@@ -5,7 +5,7 @@ import { StatusPill } from "@/components/ui/StatusPill";
 
 export function TeamPerformanceTable() {
   return (
-    <GlassCard className="overflow-hidden p-5 lg:p-6">
+    <GlassCard className="overflow-hidden p-4 sm:p-5 lg:p-6">
       <div className="mb-5">
         <h3 className="text-[22px] font-extrabold tracking-[-0.03em] text-clinical-dark">Equipe e SLA</h3>
         <p className="mt-2 text-[15px] leading-7 text-clinical-muted">Performance da recepção e responsáveis por atendimento humano.</p>

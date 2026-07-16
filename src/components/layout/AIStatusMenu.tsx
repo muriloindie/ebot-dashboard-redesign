@@ -46,23 +46,22 @@ export function AIStatusMenu({ onNavigate }: AIStatusMenuProps) {
       <button
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex h-11 items-center gap-2 rounded-2xl border border-[#53B2FF]/70 bg-[#087DFF] px-3 text-[13px] font-extrabold text-white shadow-[0_14px_34px_rgba(8,125,255,0.26)] transition hover:-translate-y-0.5 hover:bg-[#066FE4] hover:shadow-[0_18px_42px_rgba(8,125,255,0.34)] focus:outline-none focus:ring-2 focus:ring-[#087DFF]/30"
+        className="relative flex size-11 items-center justify-center gap-2 rounded-2xl border border-clinical-blue/35 bg-clinical-blue text-[13px] font-extrabold text-white shadow-[0_8px_20px_rgba(58,157,202,0.14)] transition hover:bg-clinical-blueHover hover:shadow-[0_10px_24px_rgba(58,157,202,0.18)] focus:outline-none focus:ring-2 focus:ring-clinical-blue/25 sm:w-auto sm:px-3"
       >
-        <span className="relative flex size-2.5 items-center justify-center">
-          <span className="absolute size-full animate-signal-ring rounded-full bg-white/80" />
-          <span className="relative size-2.5 animate-signal-pulse rounded-full bg-white" />
+        <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-[#8EE84F]">
+          <span className="absolute -inset-1 animate-pulse-ring rounded-full bg-[#8EE84F]" />
         </span>
-        <Bot className="size-4" />
+        <Bot className="size-4 text-white" />
         <span className="hidden sm:inline">IA</span>
-        <span className="rounded-full bg-white/20 px-2 py-0.5 text-[13px] text-white">online</span>
+        <span className="hidden rounded-full bg-white/20 px-2 py-0.5 text-[13px] text-white lg:inline">online</span>
       </button>
 
       {open ? (
         <div
           ref={panelRef}
-          className="absolute right-0 top-[calc(100%+12px)] z-50 w-[390px] max-w-[calc(100vw-24px)] origin-top-right rounded-[28px] border border-clinical-border/[0.14] bg-clinical-surface/[0.9] p-4 shadow-[0_24px_70px_rgba(38,53,50,0.16)] backdrop-blur-2xl dark:border-white/[0.08] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)]"
+          className="fixed left-3 right-3 top-[76px] z-50 max-h-[calc(100vh-96px)] overflow-y-auto rounded-[26px] border border-clinical-border/[0.14] bg-clinical-surface/[0.96] p-4 shadow-[0_24px_70px_rgba(38,53,50,0.16)] backdrop-blur-2xl dark:border-white/[0.08] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:origin-top-right sm:overflow-visible"
         >
-          <span className="absolute -top-2 right-8 size-4 rotate-45 rounded-sm border-l border-t border-clinical-border/[0.14] bg-clinical-surface/[0.9] dark:border-white/[0.08]" />
+          <span className="absolute -top-2 right-8 hidden size-4 rotate-45 rounded-sm border-l border-t border-clinical-border/[0.14] bg-clinical-surface/[0.96] dark:border-white/[0.08] sm:block" />
           <div className="relative z-10">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -106,7 +105,7 @@ export function AIStatusMenu({ onNavigate }: AIStatusMenuProps) {
 
             <button
               onClick={navigateToSettings}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#087DFF]/20 bg-[#087DFF] px-4 py-3 text-sm font-extrabold text-white shadow-[0_14px_34px_rgba(8,125,255,0.24)] transition hover:-translate-y-0.5 hover:bg-[#066FE4] focus:outline-none focus:ring-2 focus:ring-[#087DFF]/30"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-clinical-blue/20 bg-clinical-blue px-4 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(58,157,202,0.16)] transition hover:bg-clinical-blueHover focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
             >
               <Settings className="size-4" /> Configurar IA <ArrowRight className="size-4" />
             </button>

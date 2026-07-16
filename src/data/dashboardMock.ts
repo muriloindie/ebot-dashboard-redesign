@@ -163,8 +163,8 @@ export const automationInsights = [
 
 export const whatsappChannels = [
   { id: "wa-main", name: "WhatsApp Principal", number: "+55 11 98765-2301", api: "API oficial", status: "Online", health: "online", lastSync: "agora" },
-  { id: "wa-schedule", name: "WhatsApp Agendamentos", number: "+55 11 97642-1188", api: "API oficial", status: "Online", health: "online", lastSync: "há 1 min" },
-  { id: "wa-finance", name: "WhatsApp Financeiro", number: "+55 11 95508-7741", api: "Padrão", status: "Atenção", health: "warning", lastSync: "há 18 min" }
+  { id: "wa-schedule", name: "WhatsApp Agendamentos", number: "+55 11 97642-1188", api: "API oficial", status: "Atenção", health: "warning", lastSync: "há 18 min" },
+  { id: "wa-finance", name: "WhatsApp Financeiro", number: "+55 11 95508-7741", api: "Pausado pela equipe", status: "Desativado", health: "offline", lastSync: "desativado" }
 ] as const;
 
 export const aiConnection = {

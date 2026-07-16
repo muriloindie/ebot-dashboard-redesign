@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import gsap from "gsap";
 import { cn } from "@/lib/cn";
 
 type PopoverProps = {
@@ -64,6 +65,15 @@ export function Popover({
     }
     return;
   }, [open, calculateCoords]);
+
+  useEffect(() => {
+    if (!open || !menuRef.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    gsap.fromTo(
+      menuRef.current,
+      { opacity: 0, y: -8, scale: 0.98 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: "power3.out" }
+    );
+  }, [open]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

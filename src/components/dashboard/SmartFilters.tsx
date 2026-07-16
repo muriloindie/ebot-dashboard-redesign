@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Filter, SlidersHorizontal } from "lucide-react";
+import { Calendar, SlidersHorizontal } from "lucide-react";
 import { filterGroups } from "@/data/dashboardMock";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Modal } from "@/components/ui/Modal";
@@ -27,6 +27,7 @@ export function SmartFilters() {
     status: "Todos",
     unit: "Clínica Geral"
   });
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [dateModalOpen, setDateModalOpen] = useState(false);
   const [currentYear, setCurrentYear] = useState(2026);
   const [currentMonth, setCurrentMonth] = useState(6);
@@ -36,6 +37,7 @@ export function SmartFilters() {
 
   const days = getDaysInMonth(currentYear, currentMonth);
   const startOffset = getFirstDayOfMonth(currentYear, currentMonth);
+  const filterSummary = `${filters.period} · ${filters.channel} · ${filters.status} · ${filters.unit}`;
 
   function selectDate(day: number) {
     const date = { day, month: currentMonth, year: currentYear };
@@ -85,8 +87,28 @@ export function SmartFilters() {
 
   return (
     <>
-      <section className="glass-card rounded-[28px] p-4">
-        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center">
+      <section className="glass-card rounded-[22px] p-3 lg:hidden">
+        <button
+          onClick={() => setFiltersModalOpen(true)}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl px-1 text-left focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-clinical-blue/10 text-clinical-blue">
+              <SlidersHorizontal className="size-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-extrabold text-clinical-dark">Filtros</span>
+              <span className="block truncate text-[13px] font-semibold text-clinical-muted">{filterSummary}</span>
+            </span>
+          </span>
+          <span className="shrink-0 rounded-full border border-clinical-blue/15 bg-clinical-blue/[0.08] px-3 py-1.5 text-[13px] font-extrabold text-clinical-blueText">
+            Editar
+          </span>
+        </button>
+      </section>
+
+      <section className="glass-card hidden rounded-[28px] p-4 lg:block">
+        <div className="flex flex-col items-start gap-3 lg:flex-row lg:items-center">
           <div className="flex min-w-[160px] items-center gap-2 px-2 text-[15px] font-extrabold text-clinical-dark">
             <span className="flex size-9 items-center justify-center rounded-xl bg-clinical-blue/10 text-clinical-blue">
               <SlidersHorizontal className="size-4" />
@@ -94,7 +116,7 @@ export function SmartFilters() {
             Filtros
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
             {filterGroups.map((group) => (
               <Dropdown
                 key={group.key}
@@ -108,16 +130,44 @@ export function SmartFilters() {
 
           <button
             onClick={() => setDateModalOpen(true)}
-            className="ml-auto flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl border border-dashed border-clinical-blue/25 bg-clinical-surface/60 px-4 text-[14px] font-extrabold text-clinical-blueText transition hover:bg-clinical-blue/10 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
+            className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-dashed border-clinical-blue/25 bg-clinical-surface/60 px-4 text-[14px] font-extrabold text-clinical-blueText transition hover:bg-clinical-blue/10 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25 sm:w-auto lg:ml-auto"
           >
             <Calendar className="size-4" />
             {startDate && endDate ? `${formatDate(startDate)} - ${formatDate(endDate)}` : "Período"}
           </button>
         </div>
-        <div className="mt-3 flex items-center gap-2 px-2 text-[13px] font-semibold text-clinical-muted/80">
-          <Filter className="size-3.5" /> Estado local do protótipo. Aqui serão conectados query params e chamadas ao backend.
-        </div>
       </section>
+
+      <Modal open={filtersModalOpen} onClose={() => setFiltersModalOpen(false)} title="Filtros do painel" className="max-w-md">
+        <div className="space-y-3">
+          {filterGroups.map((group) => (
+            <Dropdown
+              key={group.key}
+              className="w-full"
+              label={group.label}
+              value={filters[group.key]}
+              options={[...group.options]}
+              onChange={(option) => setFilters((current) => ({ ...current, [group.key]: option }))}
+            />
+          ))}
+          <button
+            onClick={() => {
+              setFiltersModalOpen(false);
+              setDateModalOpen(true);
+            }}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-clinical-blue/25 bg-clinical-surface/70 px-4 text-[14px] font-extrabold text-clinical-blueText transition hover:bg-clinical-blue/10 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
+          >
+            <Calendar className="size-4" />
+            {startDate && endDate ? `${formatDate(startDate)} - ${formatDate(endDate)}` : "Período"}
+          </button>
+        </div>
+        <button
+          onClick={() => setFiltersModalOpen(false)}
+          className="mt-5 flex w-full items-center justify-center rounded-2xl bg-clinical-blue px-4 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(58,157,202,0.16)] transition hover:bg-clinical-blueHover focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
+        >
+          Aplicar filtros
+        </button>
+      </Modal>
 
       <Modal open={dateModalOpen} onClose={() => setDateModalOpen(false)} title="Selecionar período" className="max-w-md">
         <div className="mb-4 flex items-center justify-between">

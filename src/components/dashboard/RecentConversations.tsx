@@ -13,7 +13,7 @@ export function RecentConversations() {
 
   return (
     <>
-      <GlassCard className="p-5 lg:p-6">
+      <GlassCard className="p-4 sm:p-5 lg:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h3 className="text-[22px] font-extrabold tracking-[-0.03em] text-clinical-dark">Conversas recentes</h3>

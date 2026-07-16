@@ -12,7 +12,7 @@ type SeriesKey = "total" | "ai" | "human";
 const toggles: { key: SeriesKey; label: string; icon: React.ElementType; color: string }[] = [
   { key: "total", label: "Total", icon: Activity, color: "#3A9DCA" },
   { key: "ai", label: "Resolvidos por IA", icon: Bot, color: "#30A3A4" },
-  { key: "human", label: "Transferidos", icon: UsersRound, color: "#F19D18" }
+  { key: "human", label: "Transferidos", icon: UsersRound, color: "#87A630" }
 ];
 
 function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
@@ -43,15 +43,15 @@ export function WaveLineChart() {
   }
 
   return (
-    <GlassCard data-chart-card className="flex flex-col p-5 lg:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+    <GlassCard data-chart-card className="flex min-w-0 flex-col overflow-hidden p-4 sm:p-5 lg:p-6">
+      <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
           <h3 className="text-[21px] font-extrabold tracking-[-0.03em] text-clinical-dark">Fluxo por hora</h3>
           <p className="mt-1.5 max-w-xl text-[14px] leading-6 text-clinical-muted">
             Volume de conversas, transferências humanas e resoluções automáticas ao longo do dia.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="clinical-scrollbar flex max-w-full shrink-0 gap-1.5 overflow-x-auto rounded-full border border-clinical-border/[0.10] bg-clinical-surface/62 p-1">
           {toggles.map((toggle) => {
             const Icon = toggle.icon;
             const active = visible[toggle.key];
@@ -60,38 +60,31 @@ export function WaveLineChart() {
                 key={toggle.key}
                 onClick={() => toggleSeries(toggle.key)}
                 className={cn(
-                  "flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-extrabold transition duration-300 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
-                  active ? "border-clinical-blue/20 bg-clinical-blue/10 text-clinical-blueText" : "border-clinical-border/[0.10] bg-clinical-surface/55 text-clinical-muted"
+                  "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-extrabold transition duration-200 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
+                  active ? "bg-clinical-surface text-clinical-blueText shadow-[0_6px_16px_rgba(38,53,50,0.06)]" : "text-clinical-muted hover:bg-clinical-surface/70 hover:text-clinical-slate"
                 )}
               >
-                <Icon className="size-3.5" /> {toggle.label}
+                <Icon className="size-3.5" style={{ color: active ? toggle.color : undefined }} /> {toggle.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="mt-5 min-h-[300px] flex-1 rounded-[24px] border border-clinical-border/[0.08] bg-gradient-to-b from-clinical-surface/78 to-clinical-blue/[0.03] p-2">
+      <div className="mt-5 h-[260px] w-full min-w-0 max-w-full overflow-hidden rounded-[22px] border border-clinical-border/[0.08] bg-gradient-to-b from-clinical-surface/80 to-clinical-blue/[0.025] p-2 sm:h-[300px] sm:rounded-[24px]">
         <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={hourlyFlow} margin={{ top: 18, right: 14, left: -22, bottom: 8 }}>
+          <AreaChart data={hourlyFlow} margin={{ top: 18, right: 8, left: -28, bottom: 8 }}>
             <defs>
               <linearGradient id="totalStroke" x1="0" x2="1" y1="0" y2="0">
                 <stop offset="0%" stopColor="#3A9DCA" />
                 <stop offset="100%" stopColor="#30A3A4" />
               </linearGradient>
               <linearGradient id="totalFill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#3A9DCA" stopOpacity={0.24} />
+                <stop offset="0%" stopColor="#3A9DCA" stopOpacity={0.18} />
                 <stop offset="100%" stopColor="#3A9DCA" stopOpacity={0.02} />
               </linearGradient>
-              <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
-            <CartesianGrid stroke="rgba(43,159,232,0.10)" strokeDasharray="4 8" vertical={false} />
+            <CartesianGrid stroke="rgba(58,157,202,0.09)" strokeDasharray="4 10" vertical={false} />
             <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: "#52625F", fontSize: 12, fontWeight: 700 }} dy={12} />
             <YAxis axisLine={false} tickLine={false} tick={{ fill: "#52625F", fontSize: 12, fontWeight: 700 }} />
             <Tooltip content={<CustomTooltip />} cursor={{ stroke: "rgba(43,159,232,0.22)", strokeWidth: 1 }} />
@@ -101,19 +94,18 @@ export function WaveLineChart() {
                 dataKey="total"
                 name="Total"
                 stroke="url(#totalStroke)"
-                strokeWidth={4}
+                strokeWidth={3}
                 fill="url(#totalFill)"
-                filter="url(#lineGlow)"
                 dot={false}
-                activeDot={{ r: 6, strokeWidth: 3, stroke: "#fff", fill: "#3A9DCA" }}
+                activeDot={{ r: 5, strokeWidth: 3, stroke: "#fff", fill: "#3A9DCA" }}
                 animationDuration={1200}
               />
             ) : null}
             {visible.ai ? (
-              <Area type="monotone" dataKey="ai" name="IA" stroke="#30A3A4" strokeWidth={2.5} fill="transparent" dot={false} activeDot={{ r: 5 }} animationDuration={1100} />
+              <Area type="monotone" dataKey="ai" name="IA" stroke="#30A3A4" strokeWidth={2.25} fill="transparent" dot={false} activeDot={{ r: 4.5, strokeWidth: 2, stroke: "#fff", fill: "#30A3A4" }} animationDuration={1100} />
             ) : null}
             {visible.human ? (
-              <Area type="monotone" dataKey="human" name="Humano" stroke="#F19D18" strokeWidth={2.5} fill="transparent" dot={false} activeDot={{ r: 5 }} animationDuration={1100} />
+              <Area type="monotone" dataKey="human" name="Humano" stroke="#87A630" strokeWidth={2.25} fill="transparent" dot={false} activeDot={{ r: 4.5, strokeWidth: 2, stroke: "#fff", fill: "#87A630" }} animationDuration={1100} />
             ) : null}
           </AreaChart>
         </ResponsiveContainer>

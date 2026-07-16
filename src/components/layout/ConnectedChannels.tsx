@@ -20,8 +20,8 @@ const statusClasses = {
     dot: "bg-clinical-orange"
   },
   offline: {
-    pill: "border-red-400/35 bg-red-500/[0.12] text-red-600 dark:text-red-300",
-    dot: "bg-red-500"
+    pill: "border-slate-300 bg-slate-100 text-slate-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300",
+    dot: "bg-slate-400"
   }
 };
 
@@ -78,23 +78,22 @@ export function ConnectedChannels({ onNavigate }: ConnectedChannelsProps) {
       <button
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex h-11 items-center gap-2 rounded-2xl border border-[#25D366]/70 bg-[#25D366] px-3 text-[13px] font-extrabold text-white shadow-[0_14px_34px_rgba(37,211,102,0.24)] transition hover:-translate-y-0.5 hover:bg-[#20BE5C] hover:shadow-[0_18px_42px_rgba(37,211,102,0.30)] focus:outline-none focus:ring-2 focus:ring-[#25D366]/30"
+        className="relative flex size-11 items-center justify-center gap-2 rounded-2xl border border-[#2EAD68]/35 bg-[#2EAD68] text-[13px] font-extrabold text-white shadow-[0_8px_20px_rgba(46,173,104,0.14)] transition hover:bg-[#278F58] hover:shadow-[0_10px_24px_rgba(46,173,104,0.18)] focus:outline-none focus:ring-2 focus:ring-[#2EAD68]/25 sm:w-auto sm:px-3"
       >
-        <span className="relative flex size-2.5 items-center justify-center">
-          <span className="absolute size-full animate-signal-ring rounded-full bg-white/80" />
-          <span className="relative size-2.5 animate-signal-pulse rounded-full bg-white" />
+        <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-[#54E36F]">
+          <span className="absolute -inset-1 animate-pulse-ring rounded-full bg-[#54E36F]" />
         </span>
-        <WhatsAppIcon className="size-4" />
+        <WhatsAppIcon className="size-4 text-white" />
         <span className="hidden sm:inline">WhatsApp</span>
-        <span className="rounded-full bg-white/20 px-2 py-0.5 text-[13px] text-white">{summary.detail}</span>
+        <span className="hidden rounded-full bg-white/20 px-2 py-0.5 text-[13px] text-white lg:inline">{summary.detail}</span>
       </button>
 
       {open ? (
         <div
           ref={panelRef}
-          className="absolute right-0 top-[calc(100%+12px)] z-50 w-[400px] max-w-[calc(100vw-24px)] origin-top-right rounded-[28px] border border-clinical-border/[0.14] bg-clinical-surface/[0.9] p-4 shadow-[0_24px_70px_rgba(38,53,50,0.16)] backdrop-blur-2xl dark:border-white/[0.08] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)]"
+          className="fixed left-3 right-3 top-[76px] z-50 max-h-[calc(100vh-96px)] overflow-y-auto rounded-[26px] border border-clinical-border/[0.14] bg-clinical-surface/[0.96] p-4 shadow-[0_24px_70px_rgba(38,53,50,0.16)] backdrop-blur-2xl dark:border-white/[0.08] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[400px] sm:max-w-[calc(100vw-24px)] sm:origin-top-right sm:overflow-visible"
         >
-          <span className="absolute -top-2 right-8 size-4 rotate-45 rounded-sm border-l border-t border-clinical-border/[0.14] bg-clinical-surface/[0.9] dark:border-white/[0.08]" />
+          <span className="absolute -top-2 right-8 hidden size-4 rotate-45 rounded-sm border-l border-t border-clinical-border/[0.14] bg-clinical-surface/[0.96] dark:border-white/[0.08] sm:block" />
           <div className="relative z-10">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -108,9 +107,9 @@ export function ConnectedChannels({ onNavigate }: ConnectedChannelsProps) {
 
             <div className="space-y-2">
               {whatsappChannels.map((channel) => (
-                <div key={channel.id} className="rounded-2xl border border-clinical-border/[0.10] bg-clinical-surfaceMuted/55 p-3 transition hover:bg-clinical-surface">
+                <div key={channel.id} className={cn("rounded-2xl border border-clinical-border/[0.10] p-3 transition hover:bg-clinical-surface", channel.health === "offline" ? "bg-slate-50/80 opacity-90 dark:bg-white/[0.035]" : "bg-clinical-surfaceMuted/55")}>
                   <div className="flex items-center gap-3">
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-clinical-whatsapp/[0.10] text-clinical-whatsapp shadow-[inset_4px_4px_10px_rgba(38,53,50,0.04),inset_-4px_-4px_10px_rgba(255,255,255,0.45)] dark:shadow-none">
+                    <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-[inset_4px_4px_10px_rgba(38,53,50,0.04),inset_-4px_-4px_10px_rgba(255,255,255,0.45)] dark:shadow-none", channel.health === "offline" ? "bg-slate-200/70 text-slate-500 dark:bg-white/[0.06] dark:text-slate-300" : "bg-clinical-whatsapp/[0.10] text-clinical-whatsapp")}>
                       <WhatsAppIcon className="size-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -134,7 +133,7 @@ export function ConnectedChannels({ onNavigate }: ConnectedChannelsProps) {
 
             <button
               onClick={navigateToChannels}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-clinical-whatsapp/20 bg-clinical-whatsapp/[0.12] px-4 py-3 text-sm font-extrabold text-clinical-whatsapp transition hover:-translate-y-0.5 hover:bg-clinical-whatsapp/[0.18] focus:outline-none focus:ring-2 focus:ring-clinical-whatsapp/25"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#2EAD68]/25 bg-[#2EAD68] px-4 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(46,173,104,0.16)] transition hover:bg-[#278F58] focus:outline-none focus:ring-2 focus:ring-[#2EAD68]/25"
             >
               <BadgeCheck className="size-4" /> Configurar canais <ArrowRight className="size-4" />
             </button>

@@ -58,7 +58,7 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
       <button
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          "flex h-11 items-center gap-2 rounded-2xl border px-3.5 text-[14px] font-bold transition duration-300 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
+          "flex h-11 w-full items-center justify-between gap-2 rounded-2xl border px-3.5 text-[14px] font-bold transition duration-300 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
           open
             ? "border-clinical-blue/30 bg-clinical-blue/10 text-clinical-blue"
             : "border-clinical-border/[0.12] bg-clinical-surface/65 text-clinical-slate hover:border-clinical-blue/25 hover:text-clinical-blue"
