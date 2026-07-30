@@ -279,6 +279,8 @@ export function Topbar({ onNavigate, onMenuClick, clinic, clinics, onClinicChang
           <div ref={notifMenuRef} className="relative">
             <button
               onClick={() => setNotifMenuOpen((current) => !current)}
+              aria-label="Abrir notificações"
+              aria-expanded={notifMenuOpen}
               className="inline-flex size-11 items-center justify-center rounded-2xl border border-clinical-border/[0.12] bg-clinical-surface/70 text-clinical-slate transition duration-300 hover:-translate-y-0.5 hover:border-clinical-blue/25 hover:text-clinical-blue hover:shadow-card focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
             >
               <Bell className="size-4" />
@@ -319,6 +321,8 @@ export function Topbar({ onNavigate, onMenuClick, clinic, clinics, onClinicChang
           <div ref={userMenuRef} className="relative">
             <button
               onClick={() => setUserMenuOpen((current) => !current)}
+              aria-label="Abrir menu da conta"
+              aria-expanded={userMenuOpen}
               className="flex h-11 shrink-0 cursor-pointer items-center gap-3 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surface/75 px-2.5 pr-3 transition hover:border-clinical-blue/25 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
             >
               <div className="flex size-8 items-center justify-center rounded-xl bg-clinical-charcoal text-[13px] font-extrabold text-white">DR</div>

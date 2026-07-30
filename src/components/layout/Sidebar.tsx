@@ -194,12 +194,15 @@ export function Sidebar({ activeItem, onChange, mobileOpen = false, onMobileClos
                     <Tooltip key={item.id} content={item.label} side="right">
                       <button
                         data-sidebar-item
-                        onClick={() => handleSelect(item.id)}
+                         onClick={() => handleSelect(item.id)}
+                         disabled={!item.enabled}
+                         aria-disabled={!item.enabled || undefined}
+                         title={!item.enabled ? "Disponível em breve" : item.label}
                         className={cn(
                           "flex h-12 w-full items-center justify-center rounded-[16px] border p-2.5 transition focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
                           active
                             ? "border-clinical-blue/20 bg-[#EAF6FB] text-clinical-blueText dark:bg-clinical-blue/[0.14] dark:text-clinical-blue"
-                            : "border-[#E2EEF3] bg-white/70 text-clinical-muted hover:bg-[#EEF8FC] hover:text-clinical-blueText dark:border-transparent dark:bg-white/[0.05] dark:hover:bg-white/[0.08] dark:hover:text-clinical-blue"
+                             : !item.enabled ? "border-transparent bg-white/45 text-clinical-muted/45" : "border-[#E2EEF3] bg-white/70 text-clinical-muted hover:bg-[#EEF8FC] hover:text-clinical-blueText dark:border-transparent dark:bg-white/[0.05] dark:hover:bg-white/[0.08] dark:hover:text-clinical-blue"
                         )}
                       >
                         <Icon className="size-5 shrink-0 stroke-[2.1]" />
@@ -237,12 +240,15 @@ export function Sidebar({ activeItem, onChange, mobileOpen = false, onMobileClos
                               <Tooltip key={item.id} content={item.label} side="right">
                                 <button
                                   data-sidebar-item
-                                  onClick={() => handleSelect(item.id)}
+                                   onClick={() => handleSelect(item.id)}
+                                   disabled={!item.enabled}
+                                   aria-disabled={!item.enabled || undefined}
+                                   title={!item.enabled ? "Disponível em breve" : item.label}
                                   className={cn(
                                     "flex h-11 w-full items-center justify-center rounded-[16px] border p-2 transition focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
                                     active
                                       ? "border-clinical-blue/20 bg-[#EAF6FB] text-clinical-blueText dark:bg-clinical-blue/[0.14] dark:text-clinical-blue"
-                                      : "border-transparent text-clinical-muted hover:bg-[#F1F8FB] hover:text-clinical-blueText dark:hover:bg-white/[0.08] dark:hover:text-clinical-blue"
+                                       : !item.enabled ? "border-transparent text-clinical-muted/45" : "border-transparent text-clinical-muted hover:bg-[#F1F8FB] hover:text-clinical-blueText dark:hover:bg-white/[0.08] dark:hover:text-clinical-blue"
                                   )}
                                 >
                                   <ItemIcon className="size-5 shrink-0 stroke-[2.1]" />

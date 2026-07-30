@@ -161,6 +161,21 @@ textarea {
   animation: pulse-ring 2s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
 }
 
+@keyframes list-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-list-in {
+  animation: list-in 220ms ease-out both;
+}
+
 .animate-idle-float {
   animation: idle-float 3s ease-in-out infinite;
 }
@@ -185,5 +200,9 @@ textarea {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
+  }
+
+  .animate-list-in {
+    animation: none;
   }
 }

@@ -10,13 +10,21 @@ export function Modal({
   onClose,
   title,
   children,
-  className
+  className,
+  eyebrow,
+  description,
+  icon: Icon,
+  footer
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
   className?: string;
+  eyebrow?: string;
+  description?: string;
+  icon?: React.ElementType;
+  footer?: React.ReactNode;
 }) {
   const [rendered, setRendered] = useState(open);
   const [visible, setVisible] = useState(false);
@@ -65,17 +73,30 @@ export function Modal({
           className
         )}
         onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
       >
-        <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-xl font-extrabold tracking-[-0.03em] text-clinical-dark">{title}</h3>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            {Icon ? <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-clinical-blue/[0.10] text-clinical-blue"><Icon className="size-5" /></span> : null}
+            <div className="min-w-0">
+              {eyebrow ? <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-clinical-blueText">{eyebrow}</p> : null}
+              <h2 id="modal-title" className="text-xl font-extrabold tracking-[-0.03em] text-clinical-dark">{title}</h2>
+              {description ? <p className="mt-1 text-sm leading-5 text-clinical-muted">{description}</p> : null}
+            </div>
+          </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Fechar janela"
             className="flex size-10 items-center justify-center rounded-2xl bg-clinical-blue/10 text-clinical-blue transition hover:bg-clinical-blue hover:text-white"
           >
             <X className="size-4" />
           </button>
         </div>
         {children}
+        {footer ? <div className="mt-6 border-t border-clinical-border/[0.12] pt-4">{footer}</div> : null}
       </div>
     </div>
   );

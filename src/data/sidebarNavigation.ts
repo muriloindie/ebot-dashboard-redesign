@@ -63,11 +63,11 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     defaultOpen: true,
     badge: "5",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", enabled: true },
-      { id: "atendimentos", label: "Atendimentos", icon: Headphones, path: "/atendimentos" },
+      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/", enabled: true },
+      { id: "atendimentos", label: "Atendimentos", icon: Headphones, path: "/tickets", enabled: true },
       { id: "agenda", label: "Agenda", icon: CalendarDays, path: "/agenda" },
-      { id: "kanban", label: "Kanban", icon: Columns3, path: "/kanban" },
-      { id: "tarefas", label: "Tarefas", icon: CheckSquare, path: "/tarefas" }
+      { id: "kanban", label: "Kanban", icon: Columns3, path: "/kanban", enabled: true },
+      { id: "tarefas", label: "Tarefas", icon: CheckSquare, path: "/todolist", enabled: true }
     ]
   },
   {
@@ -75,10 +75,10 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     label: "Pacientes",
     icon: UsersRound,
     items: [
-      { id: "contatos", label: "Contatos", icon: ContactRound, path: "/contatos" },
-      { id: "relacionamentos", label: "Relacionamentos", icon: Link2, path: "/relacionamentos" },
+      { id: "contatos", label: "Contatos", icon: ContactRound, path: "/contacts", enabled: true },
+      { id: "relacionamentos", label: "Relacionamentos", icon: Link2, path: "/ticket-contact-origins", enabled: true },
       { id: "tags", label: "Tags", icon: Tags, path: "/tags" },
-      { id: "protocolos", label: "Protocolos", icon: ClipboardList, path: "/protocolos" },
+      { id: "protocolos", label: "Protocolos", icon: ClipboardList, path: "/protocols", enabled: true },
       { id: "arquivos", label: "Arquivos", icon: FileText, path: "/arquivos" }
     ]
   },
@@ -101,7 +101,7 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     badge: "8",
     items: [
       { id: "canais", label: "Canais", icon: RadioTower, path: "/canais" },
-      { id: "chat-interno", label: "Chat interno", icon: MessagesSquare, path: "/chat-interno" },
+      { id: "chat-interno", label: "Chat interno", icon: MessagesSquare, path: "/chats", enabled: true },
       {
         id: "campanhas",
         label: "Campanhas",

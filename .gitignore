@@ -26,6 +26,8 @@ pnpm-debug.log*
 .kiro/
 .opencode/
 .playwright/
+.playwright-cli/
+test-results/
 .vscode/
 opencode.json
 skills-lock.json
