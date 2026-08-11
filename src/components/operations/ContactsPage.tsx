@@ -1,61 +1,426 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Check, Download, FileDown, FileUp, Filter, Mail, MoreHorizontal, Phone, RefreshCw, SearchX, Tags, UploadCloud, UserPlus, UserRound, X } from "lucide-react";
-import { contacts } from "@/data/operationsMock";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CalendarClock, Camera, Check, Download, FileDown, FileUp, Headphones, Mail, Phone, RadioTower, RefreshCw, SearchX, Star, Tags, UploadCloud, UserPlus, UserRound, UserRoundCheck, UserX, X } from "lucide-react";
+import { contacts, contactStages, type Contact, type ContactStage } from "@/data/contactsMock";
 import { readLocalCache, writeLocalCache } from "@/lib/localCache";
+import { usePageEnter } from "@/lib/usePageEnter";
 import { Button } from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
-import { ModalChoice, ModalField, ModalSelect } from "@/components/ui/ModalField";
+import { ModalField, ModalSelect, ModalChoice } from "@/components/ui/ModalField";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { Avatar } from "@/components/ui/Avatar";
+import { ChannelIcon } from "@/components/ui/ChannelIcon";
 import { PageHeader, SearchField, StatePanel, StatusBadge, TableCell, TableHeaderCell, TableHead, TableSurface } from "@/components/ui/Week1Primitives";
+import { cn } from "@/lib/cn";
 
-const CACHE_KEY = "ebot-week1-contacts";
-type Contact = typeof contacts[number];
+const CACHE_KEY = "ebot-week2-contacts";
+const ALL = "Todos";
+
+const stageTone: Record<ContactStage, "blue" | "orange" | "green" | "neutral"> = {
+  "Novo contato": "blue",
+  "Em atendimento": "orange",
+  Qualificado: "orange",
+  Agendado: "blue",
+  Convertido: "green",
+  Inativo: "neutral"
+};
+
+const stageBar: Record<ContactStage, string> = {
+  "Novo contato": "bg-clinical-blue",
+  "Em atendimento": "bg-clinical-teal",
+  Qualificado: "bg-clinical-orange",
+  Agendado: "bg-clinical-blue",
+  Convertido: "bg-clinical-green",
+  Inativo: "bg-clinical-muted/40"
+};
+
+const stageIcon: Record<ContactStage, { icon: React.ElementType; tile: string }> = {
+  "Novo contato": { icon: UserPlus, tile: "bg-clinical-blue/10 text-clinical-blue" },
+  "Em atendimento": { icon: Headphones, tile: "bg-clinical-teal/12 text-clinical-teal" },
+  Qualificado: { icon: Star, tile: "bg-clinical-orange/12 text-clinical-orange" },
+  Agendado: { icon: CalendarClock, tile: "bg-clinical-blue/10 text-clinical-blue" },
+  Convertido: { icon: UserRoundCheck, tile: "bg-clinical-green/12 text-clinical-green" },
+  Inativo: { icon: UserX, tile: "bg-clinical-surfaceMuted text-clinical-muted" }
+};
+
+function PhotoPicker({ value, onChange, name }: { value?: string; onChange: (dataUrl: string | undefined) => void; name?: string }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="flex items-center gap-4">
+      <span className="relative shrink-0">
+        <Avatar name={name ?? "Contato"} src={value} size="lg" />
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          aria-label="Escolher foto de perfil"
+          className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-clinical-border/[0.12] bg-clinical-surface text-clinical-blue shadow-sm transition hover:bg-clinical-blue hover:text-white"
+        >
+          <Camera className="size-3.5" />
+        </button>
+      </span>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-bold text-clinical-dark">Foto de perfil</span>
+        <div className="flex gap-2">
+          <Button type="button" size="sm" variant="secondary" onClick={() => inputRef.current?.click()}>Escolher foto</Button>
+          {value ? <Button type="button" size="sm" variant="ghost" onClick={() => onChange(undefined)}>Remover</Button> : null}
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => onChange(String(reader.result));
+          reader.readAsDataURL(file);
+          event.currentTarget.value = "";
+        }}
+      />
+    </div>
+  );
+}
 
 export function ContactsPage() {
+  const router = useRouter();
+  const pageRef = useRef<HTMLDivElement>(null);
+  const drawerPhotoRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Contact[]>(contacts);
   const [search, setSearch] = useState("");
+  const [stage, setStage] = useState(ALL);
+  const [channel, setChannel] = useState(ALL);
+  const [tag, setTag] = useState(ALL);
   const [selected, setSelected] = useState<Contact | null>(null);
-  const [modal, setModal] = useState<"add" | "import" | "filters" | null>(null);
+  const [modal, setModal] = useState<"add" | "import" | null>(null);
+  const [newPhoto, setNewPhoto] = useState<string | undefined>(undefined);
   const [notice, setNotice] = useState("");
-  const [tag, setTag] = useState("Todas");
-  const [source, setSource] = useState("Todas");
+
+  usePageEnter(pageRef, [
+    { selector: "[data-funnel-bar]", from: { opacity: 0, y: 14 }, to: { duration: 0.45, ease: "power3.out" } },
+    { selector: "[data-search-bar]", from: { opacity: 0, y: 14 }, to: { duration: 0.45, ease: "power3.out" } },
+    { selector: "[data-contact-row]", from: { opacity: 0, x: -12 }, to: { duration: 0.3, ease: "power2.out" } }
+  ], { stagger: 0.04, delay: 0.05 });
 
   useEffect(() => setRows(readLocalCache(CACHE_KEY, contacts)), []);
 
-  const filtered = useMemo(() => rows.filter((contact) => {
-    const matchesSearch = `${contact.name} ${contact.email} ${contact.whatsapp}`.toLowerCase().includes(search.toLowerCase());
-    const matchesTag = tag === "Todas" || contact.tags.includes(tag);
-    const matchesSource = source === "Todas" || (source === "Paciente" && contact.tags.includes("Paciente")) || (source === "Lead" && contact.tags.includes("Lead"));
-    return matchesSearch && matchesTag && matchesSource;
-  }), [rows, search, source, tag]);
+  const channels = Array.from(new Set(rows.map((row) => row.channel)));
+  const tags = Array.from(new Set(rows.flatMap((row) => row.tags))).sort();
+  const hasFilters = stage !== ALL || channel !== ALL || tag !== ALL;
 
-  function showNotice(message: string) { setNotice(message); window.setTimeout(() => setNotice(""), 3600); }
+  const filtered = useMemo(() => {
+    const query = search.toLowerCase();
+    return rows.filter((row) => {
+      const matchesSearch = `${row.name} ${row.email} ${row.whatsapp} ${row.id} ${row.tags.join(" ")}`.toLowerCase().includes(query);
+      const matchesStage = stage === ALL || row.stage === stage;
+      const matchesChannel = channel === ALL || row.channel === channel;
+      const matchesTag = tag === ALL || row.tags.includes(tag);
+      return matchesSearch && matchesStage && matchesChannel && matchesTag;
+    });
+  }, [rows, search, stage, channel, tag]);
+
+  const counts = useMemo(() => {
+    const map = new Map<ContactStage, number>();
+    for (const row of rows) map.set(row.stage, (map.get(row.stage) ?? 0) + 1);
+    return map;
+  }, [rows]);
+
+  function showNotice(message: string) {
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 3200);
+  }
+
+  function persist(next: Contact[]) {
+    setRows(next);
+    writeLocalCache(CACHE_KEY, next);
+  }
+
+  function changeStage(id: string, nextStage: ContactStage) {
+    persist(rows.map((row) => (row.id === id ? { ...row, stage: nextStage } : row)));
+    if (selected?.id === id) setSelected({ ...selected, stage: nextStage });
+    showNotice(`Contato movido para "${nextStage}".`);
+  }
+
+  function updatePhoto(id: string, photo: string | undefined) {
+    persist(rows.map((row) => (row.id === id ? { ...row, photo } : row)));
+    if (selected?.id === id) setSelected({ ...selected, photo });
+    showNotice(photo ? "Foto de perfil atualizada." : "Foto de perfil removida.");
+  }
 
   function addContact(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const next: Contact = { id: `CT-${String(rows.length + 183).padStart(4, "0")}`, name: String(form.get("name")), whatsapp: String(form.get("whatsapp")), email: String(form.get("email")), lastSeen: "Agora", tags: [String(form.get("profile"))] };
-    const nextRows = [next, ...rows];
-    setRows(nextRows); writeLocalCache(CACHE_KEY, nextRows); setModal(null); showNotice("Contato adicionado à base local.");
+    const next: Contact = {
+      id: `CT-${String(rows.length + 212)}`,
+      name: String(form.get("name")),
+      whatsapp: String(form.get("whatsapp")),
+      email: String(form.get("email")),
+      channel: String(form.get("channel")) as Contact["channel"],
+      stage: String(form.get("stage")) as ContactStage,
+      lastSeen: "Agora",
+      tags: [String(form.get("tag") ?? "Novo")],
+      photo: newPhoto
+    };
+    persist([next, ...rows]);
+    setModal(null);
+    setNewPhoto(undefined);
+    showNotice("Contato adicionado à base local.");
   }
 
-  return <div>
-    <PageHeader eyebrow="Pacientes / Contatos" title="Contatos" description="Encontre pessoas, revise dados e acesse as ações da base de contatos." action={<Button onClick={() => setModal("add")}><UserPlus className="size-4" />Adicionar contato</Button>} />
-    <div className="mb-4 flex flex-col gap-2 rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/70 p-2.5 sm:flex-row sm:items-center">
-      <SearchField value={search} onChange={setSearch} placeholder="Pesquisar por nome, telefone ou e-mail" />
-      <div className="flex shrink-0 gap-2"><Button variant="secondary" size="sm" onClick={() => setModal("filters")}><Filter className="size-4" />Filtros{tag !== "Todas" || source !== "Todas" ? <span className="flex size-5 items-center justify-center rounded-full bg-clinical-blue text-[10px] text-clinical-charcoal">!</span> : null}</Button><Button variant="secondary" size="sm" onClick={() => setModal("import")}><FileUp className="size-4" /><span className="hidden sm:inline">Importar / exportar</span></Button></div>
+  function clearFilters() {
+    setSearch("");
+    setStage(ALL);
+    setChannel(ALL);
+    setTag(ALL);
+  }
+
+  const converted = rows.filter((row) => row.stage === "Convertido").length;
+  const conversionRate = rows.length ? Math.round((converted / rows.length) * 100) : 0;
+
+  return (
+    <div ref={pageRef}>
+      <PageHeader
+        eyebrow="Pacientes / Relacionamento"
+        title="Contatos"
+        description="Pessoas que chegaram à clínica e ainda não são pacientes: acompanhe cada etapa até a conversão."
+        action={<Button onClick={() => setModal("add")}><UserPlus className="size-4" />Adicionar contato</Button>}
+      />
+
+      {notice ? (
+        <div role="status" className="mb-4 flex items-center justify-between rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-4 py-3 text-sm font-bold text-clinical-green">
+          <span className="flex items-center gap-2"><Check className="size-4" />{notice}</span>
+          <button type="button" onClick={() => setNotice("")} aria-label="Fechar aviso"><X className="size-4" /></button>
+        </div>
+      ) : null}
+
+      <div data-funnel-bar className="mb-4 rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/70 p-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+          {contactStages.map((item) => {
+            const Icon = stageIcon[item].icon;
+            const count = counts.get(item) ?? 0;
+            const share = rows.length ? Math.round((count / rows.length) * 100) : 0;
+            const active = stage === item;
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setStage(active ? ALL : item)}
+                className={cn(
+                  "flex min-w-0 items-center gap-3 rounded-[20px] border p-3.5 text-left transition duration-200",
+                  active
+                    ? "border-clinical-blue/35 bg-clinical-blue/[0.08] shadow-[0_8px_22px_rgba(58,157,202,0.10)]"
+                    : "border-clinical-border/[0.12] bg-clinical-surface/80 hover:border-clinical-blue/25 hover:bg-clinical-surface"
+                )}
+              >
+                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl", stageIcon[item].tile)}><Icon className="size-4" /></span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[13px] font-extrabold text-clinical-dark">{item}</span>
+                  <span className="mt-0.5 flex items-baseline gap-1">
+                    <span className="text-base font-black tabular-nums text-clinical-dark">{count}</span>
+                    <span className="text-[11px] font-bold text-clinical-muted">{share}%</span>
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-clinical-surfaceMuted" aria-hidden="true">
+            {contactStages.map((item) => {
+              const count = counts.get(item) ?? 0;
+              if (!count) return null;
+              return <span key={item} title={item} className={cn("h-full", stageBar[item])} style={{ width: `${(count / Math.max(1, rows.length)) * 100}%` }} />;
+            })}
+          </div>
+          <span className="flex shrink-0 items-center gap-2 text-xs font-extrabold text-clinical-muted">
+            <UserRoundCheck className="size-4 text-clinical-green" />
+            {conversionRate}% de conversão na base
+          </span>
+        </div>
+      </div>
+
+      <div data-search-bar className="mb-4 flex flex-col gap-2 rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/70 p-2.5 lg:flex-row lg:items-center">
+        <SearchField value={search} onChange={setSearch} placeholder="Pesquisar por nome, telefone, e-mail ou etiqueta" />
+        <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3">
+          <Dropdown label="Estado" value={stage} options={[ALL, ...contactStages]} onChange={setStage} />
+          <Dropdown label="Canal" value={channel} options={[ALL, ...channels]} onChange={setChannel} />
+          <Dropdown label="Etiqueta" value={tag} options={[ALL, ...tags]} onChange={setTag} />
+        </div>
+        {hasFilters ? (
+          <Button variant="secondary" size="sm" onClick={clearFilters} className="shrink-0"><X className="size-4" />Limpar</Button>
+        ) : null}
+      </div>
+
+      {filtered.length === 0 ? (
+        <StatePanel
+          icon={SearchX}
+          title="Nenhum contato encontrado"
+          description="Ajuste a busca ou os filtros de estado, canal e etiqueta."
+          action={<Button size="sm" variant="secondary" onClick={clearFilters}>Limpar filtros</Button>}
+        />
+      ) : (
+        <TableSurface caption="Lista de contatos">
+          <TableHead>
+            <TableHeaderCell>Contato</TableHeaderCell>
+            <TableHeaderCell>Canal</TableHeaderCell>
+            <TableHeaderCell>Estado</TableHeaderCell>
+            <TableHeaderCell>Última atividade</TableHeaderCell>
+            <TableHeaderCell>Tags</TableHeaderCell>
+            <TableHeaderCell>Ações</TableHeaderCell>
+          </TableHead>
+          <tbody className="divide-y divide-clinical-border/[0.10]">
+            {filtered.map((contact) => (
+              <tr key={contact.id} data-contact-row className="animate-list-in transition hover:bg-clinical-blue/[0.035]">
+                <TableCell>
+                  <button type="button" onClick={() => setSelected(contact)} className="flex items-center gap-3 text-left">
+                    <Avatar name={contact.name} src={contact.photo} />
+                    <span>
+                      <span className="block font-extrabold text-clinical-dark hover:text-clinical-blue">{contact.name}</span>
+                      <span className="block text-xs font-semibold text-clinical-muted">{contact.id}</span>
+                    </span>
+                  </button>
+                </TableCell>
+                <TableCell>
+                  <span className="flex items-center gap-2 font-semibold text-clinical-slate"><ChannelIcon channel={contact.channel} />{contact.channel}</span>
+                  <span className="mt-1 block text-xs font-semibold text-clinical-muted">{contact.whatsapp}</span>
+                </TableCell>
+                <TableCell>
+                  <label className="sr-only" htmlFor={`stage-${contact.id}`}>Estado de {contact.name}</label>
+                  <select
+                    id={`stage-${contact.id}`}
+                    value={contact.stage}
+                    onChange={(event) => changeStage(contact.id, event.target.value as ContactStage)}
+                    className="cursor-pointer rounded-full border-0 bg-clinical-surfaceMuted/60 py-1.5 pl-2.5 pr-7 text-[12px] font-extrabold text-clinical-dark outline-none transition focus:ring-2 focus:ring-clinical-blue/25"
+                    style={{ color: "inherit" }}
+                  >
+                    {contactStages.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </TableCell>
+                <TableCell><span className="font-semibold text-clinical-slate">{contact.lastSeen}</span></TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">{contact.tags.slice(0, 3).map((item) => <StatusBadge key={item} label={item} tone="neutral" />)}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <button type="button" onClick={() => setSelected(contact)} aria-label={`Ver ${contact.name}`} className="flex size-9 items-center justify-center rounded-xl text-clinical-blue transition hover:bg-clinical-blue/10"><UserRound className="size-4" /></button>
+                    <button type="button" onClick={() => router.push("/atendimentos")} aria-label={`Atender ${contact.name}`} className="flex size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue"><Headphones className="size-4" /></button>
+                  </div>
+                </TableCell>
+              </tr>
+            ))}
+          </tbody>
+        </TableSurface>
+      )}
+
+      <Drawer open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name ?? "Contato"} description={selected ? `${selected.id} · ${selected.stage}` : undefined}>
+        {selected ? (
+          <div>
+            <div className="rounded-2xl bg-clinical-blue/[0.07] p-4">
+              <div className="flex items-center gap-4">
+                <span className="relative shrink-0">
+                  <Avatar name={selected.name} src={selected.photo} size="lg" />
+                  <button
+                    type="button"
+                    onClick={() => drawerPhotoRef.current?.click()}
+                    aria-label="Escolher foto de perfil"
+                    className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-clinical-border/[0.12] bg-clinical-surface text-clinical-blue shadow-sm transition hover:bg-clinical-blue hover:text-white"
+                  >
+                    <Camera className="size-3.5" />
+                  </button>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-extrabold text-clinical-dark">{selected.name}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <StatusBadge label={selected.stage} tone={stageTone[selected.stage]} />
+                    {selected.tags.map((tag) => <StatusBadge key={tag} label={tag} tone="neutral" />)}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-clinical-blue/10 pt-3">
+                <span className="text-sm font-bold text-clinical-dark">Foto de perfil</span>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant="secondary" onClick={() => drawerPhotoRef.current?.click()}>Escolher foto</Button>
+                  {selected.photo ? <Button type="button" size="sm" variant="ghost" onClick={() => updatePhoto(selected.id, undefined)}>Remover</Button> : null}
+                </div>
+              </div>
+              <input
+                ref={drawerPhotoRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => updatePhoto(selected.id, String(reader.result));
+                  reader.readAsDataURL(file);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </div>
+
+            <dl className="mt-6 space-y-4">
+              <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-green"><Phone className="size-4" /></span><div><dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">WhatsApp</dt><dd className="text-sm font-bold text-clinical-dark">{selected.whatsapp}</dd></div></div>
+              <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-blue"><Mail className="size-4" /></span><div><dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">E-mail</dt><dd className="text-sm font-bold text-clinical-dark">{selected.email}</dd></div></div>
+              <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-teal"><ChannelIcon channel={selected.channel} /></span><div><dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">Canal de origem</dt><dd className="text-sm font-bold text-clinical-dark">{selected.channel}</dd></div></div>
+            </dl>
+
+            <div className="mt-7">
+              <h3 className="mb-2 text-sm font-extrabold text-clinical-dark">Mover para</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {contactStages.filter((item) => item !== selected.stage).map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => changeStage(selected.id, item)}
+                    className="rounded-full border border-clinical-border/[0.14] px-3 py-1.5 text-[12px] font-extrabold text-clinical-slate transition hover:border-clinical-blue/30 hover:bg-clinical-blue/[0.07] hover:text-clinical-blue"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-7 flex flex-wrap gap-2 border-t border-clinical-border/[0.12] pt-5">
+              <Button onClick={() => { setSelected(null); router.push("/atendimentos"); }}><Headphones className="size-4" />Iniciar atendimento</Button>
+              {selected.stage !== "Convertido" ? (
+                <Button variant="secondary" onClick={() => changeStage(selected.id, "Convertido")}><Check className="size-4" />Marcar como convertido</Button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </Drawer>
+
+      <Modal open={modal === "add"} onClose={() => setModal(null)} title="Adicionar contato" eyebrow="Base de relacionamento" description="Registre um novo contato, com foto opcional, e escolha a etapa do funil em que ele entra." icon={UserPlus} className="max-w-2xl">
+        <form onSubmit={addContact} className="space-y-4">
+          <PhotoPicker value={newPhoto} name="Novo contato" onChange={setNewPhoto} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ModalField name="name" label="Nome completo" icon={UserRound} placeholder="Ex.: Camila Rodrigues" required />
+            <ModalSelect name="stage" label="Estado inicial" icon={Tags} defaultValue="Novo contato">{contactStages.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
+            <ModalSelect name="channel" label="Canal de origem" icon={RadioTower} defaultValue="WhatsApp"><option>WhatsApp</option><option>Instagram</option><option>E-mail</option><option>Telefone</option><option>Site</option></ModalSelect>
+            <ModalField name="whatsapp" label="WhatsApp" icon={Phone} placeholder="+55 11 99999-9999" required />
+            <ModalField name="email" label="E-mail" icon={Mail} type="email" placeholder="contato@email.com" required />
+            <ModalField name="tag" label="Etiqueta" icon={Tags} placeholder="Ex.: Convênio, Retorno" />
+          </div>
+          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
+            <Button type="button" variant="ghost" onClick={() => setModal(null)}>Cancelar</Button>
+            <Button type="submit"><UserPlus className="size-4" />Salvar contato</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={modal === "import"} onClose={() => setModal(null)} title="Importar ou exportar" eyebrow="Ferramentas da base" description="Escolha o formato e a operação sem sair da tela." icon={FileUp} className="max-w-xl">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ModalChoice label="Importar contatos" description="CSV ou planilha para revisar antes de adicionar." icon={UploadCloud} active={false} onClick={() => { setModal(null); showNotice("Seletor de arquivo pronto para conectar ao importador."); }} />
+          <ModalChoice label="Exportar CSV" description="Baixe os registros filtrados desta visão." icon={Download} active={false} onClick={() => { setModal(null); showNotice(`${filtered.length} contatos preparados para exportação.`); }} />
+          <ModalChoice label="Modelo de importação" description="Use o modelo com colunas recomendadas." icon={FileDown} active={false} onClick={() => { setModal(null); showNotice("Modelo de importação preparado localmente."); }} />
+          <ModalChoice label="Verificar duplicados" description="Compare nome, telefone e e-mail antes de importar." icon={RefreshCw} active={false} onClick={() => { setModal(null); showNotice("Nenhum duplicado novo encontrado na base local."); }} />
+        </div>
+      </Modal>
     </div>
-    {notice ? <div role="status" className="mb-4 flex items-center justify-between rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-4 py-3 text-sm font-bold text-clinical-green"><span className="flex items-center gap-2"><Check className="size-4" />{notice}</span><button type="button" onClick={() => setNotice("")} aria-label="Fechar aviso"><X className="size-4" /></button></div> : null}
-    {filtered.length === 0 ? <StatePanel icon={SearchX} title="Nenhum contato encontrado" description="Tente outro nome, telefone ou e-mail, ou ajuste os filtros." action={<Button size="sm" variant="secondary" onClick={() => { setSearch(""); setTag("Todas"); setSource("Todas"); }}>Limpar filtros</Button>} /> : <TableSurface caption="Lista de contatos"><TableHead><TableHeaderCell>Nome</TableHeaderCell><TableHeaderCell>WhatsApp</TableHeaderCell><TableHeaderCell>Email</TableHeaderCell><TableHeaderCell>Última atividade</TableHeaderCell><TableHeaderCell>Ações</TableHeaderCell></TableHead><tbody className="divide-y divide-clinical-border/[0.10]">{filtered.map((contact) => <tr key={contact.id} className="animate-list-in transition hover:bg-clinical-blue/[0.035]"><TableCell><div className="flex items-center gap-3"><span className="flex size-9 items-center justify-center rounded-xl bg-clinical-charcoal text-[11px] font-extrabold text-white">{contact.name.split(" ").map((part) => part[0]).slice(0, 2).join("")}</span><span><span className="block font-extrabold text-clinical-dark">{contact.name}</span><span className="block text-xs font-semibold text-clinical-muted">{contact.id}</span></span></div></TableCell><TableCell>{contact.whatsapp}</TableCell><TableCell>{contact.email}</TableCell><TableCell><span className="font-semibold text-clinical-slate">{contact.lastSeen}</span><div className="mt-1 flex gap-1">{contact.tags.map((item) => <StatusBadge key={item} label={item} tone={item === "Lead" ? "orange" : "blue"} />)}</div></TableCell><TableCell><div className="flex items-center gap-1"><button type="button" onClick={() => setSelected(contact)} aria-label={`Ver ${contact.name}`} className="flex size-9 items-center justify-center rounded-xl text-clinical-blue hover:bg-clinical-blue/10"><UserRound className="size-4" /></button><button type="button" aria-label={`Mais ações para ${contact.name}`} className="flex size-9 items-center justify-center rounded-xl text-clinical-muted hover:bg-clinical-blue/10 hover:text-clinical-blue"><MoreHorizontal className="size-4" /></button></div></TableCell></tr>)}</tbody></TableSurface>}
-
-    <Drawer open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name ?? "Contato"} description="Detalhes do contato selecionado.">{selected ? <div><div className="flex items-center gap-3 rounded-2xl bg-clinical-blue/[0.07] p-4"><span className="flex size-12 items-center justify-center rounded-2xl bg-clinical-charcoal font-extrabold text-white">{selected.name.split(" ").map((part) => part[0]).slice(0, 2).join("")}</span><div><p className="font-extrabold text-clinical-dark">{selected.name}</p><p className="text-xs font-semibold text-clinical-muted">{selected.id}</p></div></div><dl className="mt-7 space-y-5"><div><dt className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-clinical-muted"><Phone className="size-3.5" />WhatsApp</dt><dd className="mt-1 text-sm font-bold text-clinical-dark">{selected.whatsapp}</dd></div><div><dt className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-clinical-muted"><Mail className="size-3.5" />Email</dt><dd className="mt-1 text-sm font-bold text-clinical-dark">{selected.email}</dd></div></dl></div> : null}</Drawer>
-
-    <Modal open={modal === "add"} onClose={() => setModal(null)} title="Adicionar contato" eyebrow="Base de pacientes" description="Crie um registro completo para a equipe operar com contexto." icon={UserPlus} className="max-w-2xl"><form onSubmit={addContact} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><ModalField name="name" label="Nome completo" icon={UserRound} placeholder="Ex.: Camila Rodrigues" required /><ModalSelect name="profile" label="Perfil do contato" icon={Tags} defaultValue="Paciente"><option>Paciente</option><option>Lead</option><option>Responsável</option><option>Parceiro</option></ModalSelect><ModalField name="whatsapp" label="WhatsApp" icon={Phone} placeholder="+55 11 99999-9999" required /><ModalField name="email" label="E-mail" icon={Mail} type="email" placeholder="contato@email.com" required /></div><div className="rounded-2xl border border-clinical-blue/15 bg-clinical-blue/[0.06] p-3 text-xs font-semibold leading-5 text-clinical-slate">O contato será salvo no cache local desta sessão para demonstrar o fluxo de cadastro.</div><div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4"><Button type="button" variant="ghost" onClick={() => setModal(null)}>Cancelar</Button><Button type="submit"><UserPlus className="size-4" />Salvar contato</Button></div></form></Modal>
-
-    <Modal open={modal === "import"} onClose={() => setModal(null)} title="Importar ou exportar" eyebrow="Ferramentas da base" description="Escolha o formato e a operação sem sair da tela de contatos." icon={FileUp} className="max-w-xl"><div className="grid gap-3 sm:grid-cols-2"><ModalChoice label="Importar contatos" description="CSV ou planilha para revisar antes de adicionar." icon={UploadCloud} active={false} onClick={() => showNotice("Seletor de arquivo pronto para conectar ao importador.")} /><ModalChoice label="Exportar CSV" description="Baixe os registros filtrados desta visão." icon={Download} active={false} onClick={() => showNotice(`${filtered.length} contatos preparados para exportação.`)} /><ModalChoice label="Modelo de importação" description="Use o modelo com colunas recomendadas." icon={FileDown} active={false} onClick={() => showNotice("Modelo de importação preparado localmente.")} /><ModalChoice label="Verificar duplicados" description="Compare nome, telefone e e-mail antes de importar." icon={RefreshCw} active={false} onClick={() => showNotice("Nenhum duplicado novo encontrado na base local.")} /></div><div className="mt-5 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-4 text-sm leading-6 text-clinical-muted">Os arquivos e regras reais ficam fora do protótipo; aqui cada ação oferece feedback e mantém o fluxo pronto para integração.</div></Modal>
-
-    <Modal open={modal === "filters"} onClose={() => setModal(null)} title="Filtros de contatos" eyebrow="Refine a base" description="Combine critérios para encontrar exatamente o grupo desejado." icon={Filter} className="max-w-xl"><div className="space-y-4"><ModalSelect label="Tipo de contato" icon={Tags} value={tag} onChange={(event) => setTag(event.target.value)}><option>Todas</option><option>Paciente</option><option>Lead</option><option>Retorno</option><option>Exames</option></ModalSelect><ModalSelect label="Origem da relação" icon={RefreshCw} value={source} onChange={(event) => setSource(event.target.value)}><option>Todas</option><option>Paciente</option><option>Lead</option></ModalSelect><div className="flex items-center justify-between rounded-2xl bg-clinical-blue/[0.06] p-3 text-sm font-bold text-clinical-blueText"><span>{filtered.length} resultado(s) na visão</span><button type="button" onClick={() => { setTag("Todas"); setSource("Todas"); }} className="text-xs underline">Limpar critérios</button></div><div className="flex justify-end"><Button onClick={() => setModal(null)}><Check className="size-4" />Aplicar filtros</Button></div></div></Modal>
-  </div>;
+  );
 }

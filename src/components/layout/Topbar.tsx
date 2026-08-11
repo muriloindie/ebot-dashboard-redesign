@@ -326,7 +326,7 @@ export function Topbar({ onNavigate, onMenuClick, clinic, clinics, onClinicChang
               className="flex h-11 shrink-0 cursor-pointer items-center gap-3 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surface/75 px-2.5 pr-3 transition hover:border-clinical-blue/25 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
             >
               <div className="flex size-8 items-center justify-center rounded-xl bg-clinical-charcoal text-[13px] font-extrabold text-white">DR</div>
-              <div className="hidden leading-tight xl:block">
+              <div className="hidden leading-tight 2xl:block">
                 <p className="text-[13px] font-extrabold text-clinical-dark">Dr. Ruan</p>
                 <p className="flex items-center gap-1 text-[13px] font-bold text-clinical-green">
                   <ShieldCheck className="size-3" /> Operação segura

@@ -1,2 +1,5 @@
-import { TicketsPage } from "@/components/operations/TicketsPage";
-export default function TicketsRoute() { return <TicketsPage />; }
+import { redirect } from "next/navigation";
+
+export default function TicketsRedirect() {
+  redirect("/atendimentos");
+}

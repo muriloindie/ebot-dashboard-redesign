@@ -1,2 +1,5 @@
-import { ContactsPage } from "@/components/operations/ContactsPage";
-export default function ContactsRoute() { return <ContactsPage />; }
+import { redirect } from "next/navigation";
+
+export default function ContactsRedirect() {
+  redirect("/contatos");
+}

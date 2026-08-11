@@ -1,0 +1,61 @@
+import { useState } from "react";
+import { cn } from "@/lib/cn";
+
+type AvatarProps = {
+  name: string;
+  src?: string;
+  size?: "sm" | "md" | "lg" | "xl";
+  tone?: "charcoal" | "blue" | "green" | "teal" | "orange" | "whatsapp" | "muted";
+  status?: "online" | "busy" | "offline";
+  className?: string;
+};
+
+const sizes = {
+  sm: "size-8 text-[10px] rounded-lg",
+  md: "size-10 text-[11px] rounded-xl",
+  lg: "size-12 text-sm rounded-xl",
+  xl: "size-14 text-base rounded-2xl"
+};
+
+const tones = {
+  charcoal: "bg-clinical-charcoal text-white",
+  blue: "bg-clinical-blue text-clinical-charcoal",
+  green: "bg-clinical-green text-white",
+  teal: "bg-clinical-teal text-white",
+  orange: "bg-clinical-orange text-white",
+  whatsapp: "bg-clinical-whatsapp text-white",
+  muted: "bg-clinical-surfaceMuted text-clinical-muted"
+};
+
+const statusStyles = {
+  online: "bg-clinical-green",
+  busy: "bg-clinical-orange",
+  offline: "bg-clinical-muted/45"
+};
+
+export function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+export function Avatar({ name, src, size = "md", tone = "charcoal", status, className }: AvatarProps) {
+  const [failed, setFailed] = useState(false);
+  const showPhoto = Boolean(src) && !failed;
+  return (
+    <span className={cn("relative inline-flex shrink-0 items-center justify-center overflow-hidden font-extrabold", sizes[size], !showPhoto && tones[tone], className)} aria-hidden="true">
+      {showPhoto ? (
+        <img src={src} alt="" onError={() => setFailed(true)} className="size-full object-cover" loading="lazy" />
+      ) : (
+        getInitials(name)
+      )}
+      {status ? (
+        <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-clinical-surface", statusStyles[status])} />
+      ) : null}
+    </span>
+  );
+}

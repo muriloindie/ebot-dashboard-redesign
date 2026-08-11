@@ -116,6 +116,11 @@ textarea {
   background: transparent;
 }
 
+.chat-dots {
+  background-image: radial-gradient(circle, rgb(var(--clinical-charcoal) / 0.045) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
 @keyframes pulse-ring {
   0% {
     transform: scale(0.75);

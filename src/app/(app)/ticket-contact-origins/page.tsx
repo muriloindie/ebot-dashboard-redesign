@@ -1,2 +1,5 @@
-import { ContactOriginsPage } from "@/components/operations/ContactOriginsPage";
-export default function ContactOriginsRoute() { return <ContactOriginsPage />; }
+import { redirect } from "next/navigation";
+
+export default function OriginsRedirect() {
+  redirect("/relacionamentos");
+}

@@ -61,13 +61,13 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     label: "Operação",
     icon: Activity,
     defaultOpen: true,
-    badge: "5",
+    badge: "6",
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/", enabled: true },
-      { id: "atendimentos", label: "Atendimentos", icon: Headphones, path: "/tickets", enabled: true },
-      { id: "agenda", label: "Agenda", icon: CalendarDays, path: "/agenda" },
+      { id: "atendimentos", label: "Atendimentos", icon: Headphones, path: "/atendimentos", enabled: true, badge: "9" },
+      { id: "agenda", label: "Agenda", icon: CalendarDays, path: "/agenda", enabled: true },
       { id: "kanban", label: "Kanban", icon: Columns3, path: "/kanban", enabled: true },
-      { id: "tarefas", label: "Tarefas", icon: CheckSquare, path: "/todolist", enabled: true }
+      { id: "tarefas", label: "Tarefas", icon: CheckSquare, path: "/tarefas", enabled: true }
     ]
   },
   {
@@ -75,10 +75,11 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     label: "Pacientes",
     icon: UsersRound,
     items: [
-      { id: "contatos", label: "Contatos", icon: ContactRound, path: "/contacts", enabled: true },
-      { id: "relacionamentos", label: "Relacionamentos", icon: Link2, path: "/ticket-contact-origins", enabled: true },
+      { id: "pacientes", label: "Pacientes", icon: UserRound, path: "/pacientes", enabled: true },
+      { id: "contatos", label: "Contatos", icon: ContactRound, path: "/contatos", enabled: true },
+      { id: "relacionamentos", label: "Relacionamentos", icon: Link2, path: "/relacionamentos", enabled: true },
       { id: "tags", label: "Tags", icon: Tags, path: "/tags" },
-      { id: "protocolos", label: "Protocolos", icon: ClipboardList, path: "/protocols", enabled: true },
+      { id: "protocolos", label: "Protocolos", icon: ClipboardList, path: "/protocolos", enabled: true },
       { id: "arquivos", label: "Arquivos", icon: FileText, path: "/arquivos" }
     ]
   },
@@ -101,7 +102,7 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     badge: "8",
     items: [
       { id: "canais", label: "Canais", icon: RadioTower, path: "/canais" },
-      { id: "chat-interno", label: "Chat interno", icon: MessagesSquare, path: "/chats", enabled: true },
+      { id: "chat-interno", label: "Chat interno", icon: MessagesSquare, path: "/chat-interno", enabled: true },
       {
         id: "campanhas",
         label: "Campanhas",

@@ -1,2 +1,5 @@
-import { ChatsPage } from "@/components/operations/ChatsPage";
-export default function ChatsRoute() { return <ChatsPage />; }
+import { redirect } from "next/navigation";
+
+export default function ChatsRedirect() {
+  redirect("/chat-interno");
+}

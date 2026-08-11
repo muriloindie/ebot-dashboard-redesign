@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-const routes = ["/tickets", "/contacts", "/protocols", "/ticket-contact-origins", "/chats", "/todolist", "/kanban"];
+const routes = ["/atendimentos", "/agenda", "/pacientes", "/contatos", "/protocolos", "/relacionamentos", "/chat-interno", "/tarefas", "/kanban"];
 
-test.describe("Semana 1", () => {
+test.describe("Semana 2", () => {
   test("login valida campos e encaminha para atendimentos", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: "Entrar na central" })).toBeVisible();
@@ -14,8 +14,23 @@ test.describe("Semana 1", () => {
     await page.getByLabel("Usuário").fill("demo");
     await page.locator('input[autocomplete="current-password"]').fill("demo");
     await page.getByRole("button", { name: "Entrar na central" }).click();
-    await expect(page).toHaveURL(/\/tickets$/);
+    await expect(page).toHaveURL(/\/atendimentos$/);
     await expect(page.getByRole("heading", { name: "Atendimentos" })).toBeVisible();
+  });
+
+  test("rotas antigas redirecionam para as novas", async ({ page }) => {
+    const redirects: Record<string, string> = {
+      "/tickets": "/atendimentos",
+      "/contacts": "/contatos",
+      "/protocols": "/protocolos",
+      "/ticket-contact-origins": "/relacionamentos",
+      "/chats": "/chat-interno",
+      "/todolist": "/tarefas"
+    };
+    for (const [from, to] of Object.entries(redirects)) {
+      await page.goto(from);
+      await expect(page).toHaveURL(new RegExp(to.replace("/", "\\/") + "$"));
+    }
   });
 
   test("login mantém estrutura acessível", async ({ page }) => {

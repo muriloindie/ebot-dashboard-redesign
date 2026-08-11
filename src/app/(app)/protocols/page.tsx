@@ -1,2 +1,5 @@
-import { ProtocolsPage } from "@/components/operations/ProtocolsPage";
-export default function ProtocolsRoute() { return <ProtocolsPage />; }
+import { redirect } from "next/navigation";
+
+export default function ProtocolsRedirect() {
+  redirect("/protocolos");
+}

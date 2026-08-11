@@ -18,7 +18,7 @@ export function LoginPage() {
     event.preventDefault();
     if (!username.trim() || !password.trim()) { setStatus("error"); return; }
     setStatus("loading");
-    window.setTimeout(() => router.replace("/tickets"), 650);
+    window.setTimeout(() => router.replace("/atendimentos"), 650);
   }
 
   return (
