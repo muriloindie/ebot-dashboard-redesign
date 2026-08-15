@@ -118,12 +118,12 @@ export const filterGroups = [
 export const agendaDates = ["Hoje", "Amanhã", "15 Jul", "16 Jul", "17 Jul"];
 
 export const appointments = [
-  { time: "09:00", title: "Dra. Juliana Mendes", detail: "Consulta particular", status: "Confirmado", tone: "success" as StatusTone },
-  { time: "10:30", title: "Dr. Ricardo Lima", detail: "Retorno cardiologia", status: "Aguardando confirmação", tone: "warning" as StatusTone },
-  { time: "11:15", title: "Encaixe liberado", detail: "IA sugeriu contato", status: "IA em ação", tone: "info" as StatusTone },
-  { time: "14:00", title: "Clínica Geral", detail: "Primeira consulta", status: "Confirmado", tone: "success" as StatusTone },
-  { time: "15:00", title: "Retorno particular", detail: "Lembrete enviado", status: "WhatsApp", tone: "whatsapp" as StatusTone },
-  { time: "18:30", title: "Fora do horário", detail: "Paciente pediu remarcação", status: "IA em atendimento", tone: "info" as StatusTone }
+  { day: "Hoje", time: "09:00", title: "Dra. Juliana Mendes", detail: "Consulta particular", status: "Confirmado", tone: "success" as StatusTone },
+  { day: "Hoje", time: "10:30", title: "Dr. Ricardo Lima", detail: "Retorno cardiologia", status: "Aguardando confirmação", tone: "warning" as StatusTone },
+  { day: "Amanhã", time: "11:15", title: "Encaixe liberado", detail: "IA sugeriu contato", status: "IA em ação", tone: "info" as StatusTone },
+  { day: "Amanhã", time: "14:00", title: "Clínica Geral", detail: "Primeira consulta", status: "Confirmado", tone: "success" as StatusTone },
+  { day: "15 Jul", time: "15:00", title: "Retorno particular", detail: "Lembrete enviado", status: "WhatsApp", tone: "whatsapp" as StatusTone },
+  { day: "16 Jul", time: "18:30", title: "Fora do horário", detail: "Paciente pediu remarcação", status: "IA em atendimento", tone: "info" as StatusTone }
 ];
 
 export const automationInsights = [

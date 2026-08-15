@@ -31,9 +31,10 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
   );
 }
 
-export function WaveLineChart() {
+export function WaveLineChart({ scale = 1 }: { scale?: number }) {
   const [visible, setVisible] = useState<Record<SeriesKey, boolean>>({ total: true, ai: true, human: true });
   const activeCount = useMemo(() => Object.values(visible).filter(Boolean).length, [visible]);
+  const chartData = useMemo(() => hourlyFlow.map((point) => ({ ...point, total: Math.max(1, Math.round(point.total * scale)), ai: Math.max(1, Math.round(point.ai * scale)), human: Math.max(1, Math.round(point.human * scale)) })), [scale]);
 
   function toggleSeries(key: SeriesKey) {
     setVisible((current) => {
@@ -58,6 +59,8 @@ export function WaveLineChart() {
             return (
               <button
                 key={toggle.key}
+                type="button"
+                aria-pressed={active}
                 onClick={() => toggleSeries(toggle.key)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-extrabold transition duration-200 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
@@ -73,7 +76,7 @@ export function WaveLineChart() {
 
       <div className="mt-5 h-[260px] w-full min-w-0 max-w-full overflow-hidden rounded-[22px] border border-clinical-border/[0.08] bg-gradient-to-b from-clinical-surface/80 to-clinical-blue/[0.025] p-2 sm:h-[300px] sm:rounded-[24px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={hourlyFlow} margin={{ top: 18, right: 8, left: -28, bottom: 8 }}>
+          <AreaChart data={chartData} margin={{ top: 18, right: 8, left: -28, bottom: 8 }}>
             <defs>
               <linearGradient id="totalStroke" x1="0" x2="1" y1="0" y2="0">
                 <stop offset="0%" stopColor="#3A9DCA" />
@@ -85,8 +88,8 @@ export function WaveLineChart() {
               </linearGradient>
             </defs>
             <CartesianGrid stroke="rgba(58,157,202,0.09)" strokeDasharray="4 10" vertical={false} />
-            <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: "#52625F", fontSize: 12, fontWeight: 700 }} dy={12} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: "#52625F", fontSize: 12, fontWeight: 700 }} />
+            <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: "rgb(var(--clinical-muted))", fontSize: 12, fontWeight: 700 }} dy={12} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgb(var(--clinical-muted))", fontSize: 12, fontWeight: 700 }} />
             <Tooltip content={<CustomTooltip />} cursor={{ stroke: "rgba(43,159,232,0.22)", strokeWidth: 1 }} />
             {visible.total ? (
               <Area

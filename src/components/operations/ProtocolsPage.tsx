@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
   Ban,
   BellRing,
   Bot,
@@ -14,30 +16,34 @@ import {
   Clock3,
   FileText,
   FlaskConical,
+  GripVertical,
   HeartPulse,
   Layers3,
   ListChecks,
   MessageSquareText,
   Phone,
+  Pencil,
   Plus,
   RefreshCw,
   RotateCcw,
+  Save,
   SearchX,
   Send,
   ShieldCheck,
   Stethoscope,
+  Trash2,
   UserPlus,
   UserRound,
   X,
   type LucideIcon
 } from "lucide-react";
-import { protocolTemplates, protocolCategories, type ProtocolCategory, type ProtocolStatus, type ProtocolTemplate } from "@/data/protocolTemplatesMock";
+import { protocolTemplates, protocolCategories, type ProtocolCategory, type ProtocolStatus, type ProtocolStep, type ProtocolTemplate } from "@/data/protocolTemplatesMock";
 import { readLocalCache, writeLocalCache } from "@/lib/localCache";
 import { usePageEnter } from "@/lib/usePageEnter";
 import { Button } from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
-import { ModalField, ModalSelect } from "@/components/ui/ModalField";
+import { ModalField, ModalSelect, ModalTextarea } from "@/components/ui/ModalField";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { PageHeader, SearchField, StatePanel } from "@/components/ui/Week1Primitives";
 import { cn } from "@/lib/cn";
@@ -81,6 +87,8 @@ export function ProtocolsPage() {
   const [selected, setSelected] = useState<ProtocolTemplate | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [stepFormOpen, setStepFormOpen] = useState(false);
   const [assignResponsible, setAssignResponsible] = useState(false);
   const [responsibleValue, setResponsibleValue] = useState(ALL);
   const [selectedIcon, setSelectedIcon] = useState("ClipboardList");
@@ -91,6 +99,11 @@ export function ProtocolsPage() {
   ], { stagger: 0.07, delay: 0.05 });
 
   useEffect(() => setRows(readLocalCache(CACHE_KEY, protocolTemplates)), []);
+
+  useEffect(() => {
+    setEditing(false);
+    setStepFormOpen(false);
+  }, [selected?.id]);
 
   const responsibles = Array.from(new Set(rows.map((row) => row.responsible)));
   const hasFilters = category !== ALL || status !== ALL || responsible !== ALL;
@@ -118,28 +131,102 @@ export function ProtocolsPage() {
     writeLocalCache(CACHE_KEY, next);
   }
 
+  function updateSelected(nextProtocol: ProtocolTemplate, message: string) {
+    persist(rows.map((row) => row.id === nextProtocol.id ? nextProtocol : row));
+    setSelected(nextProtocol);
+    showNotice(message);
+  }
+
   function createProtocol(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const name = String(form.get("name") ?? "");
+    const name = String(form.get("name") ?? "").trim();
+    const description = String(form.get("description") ?? "").trim();
+    const stepTitle = String(form.get("stepTitle") ?? "").trim();
+    const stepDescription = String(form.get("stepDescription") ?? "").trim();
+    const stepChannel = String(form.get("stepChannel") ?? "WhatsApp").trim();
+    const stepTrigger = String(form.get("stepTrigger") ?? "Início do contato").trim();
+    if (!name || !description || !stepTitle || !stepDescription || !stepTrigger) {
+      showNotice("Preencha o nome, a descrição e os dados da primeira etapa.");
+      return;
+    }
+    const formResponsible = String(form.get("responsible") ?? responsibleValue);
     const next: ProtocolTemplate = {
       id: `PT-${String(rows.length + 8).padStart(2, "0")}`,
       name,
       category: String(form.get("category")) as ProtocolCategory,
       status: String(form.get("status")) as ProtocolStatus,
-      responsible: assignResponsible && responsibleValue !== ALL ? responsibleValue : "IA + equipe",
+      responsible: assignResponsible && formResponsible !== ALL ? formResponsible : "IA + equipe",
       icon: String(form.get("icon") ?? "ClipboardList"),
       updatedAt: "Hoje",
       uses: 0,
-      description: "Novo protocolo criado pela equipe. As etapas serão configuradas em seguida.",
+      description,
       steps: [
-        { id: `s-${Date.now()}`, title: "Primeira etapa", description: "Configure o primeiro passo do fluxo.", channel: "WhatsApp", trigger: "Início do contato" }
+        { id: `s-${Date.now()}`, title: stepTitle, description: stepDescription, channel: stepChannel, trigger: stepTrigger }
       ]
     };
     persist([...rows, next]);
     setNewOpen(false);
     setSelected(next);
     showNotice(`Protocolo "${name}" criado como ${next.status}.`);
+  }
+
+  function saveProtocol(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+
+    const form = new FormData(event.currentTarget);
+    const name = String(form.get("name") ?? "").trim();
+    const description = String(form.get("description") ?? "").trim();
+    if (!name || !description) {
+      showNotice("Informe o nome e a descrição do protocolo.");
+      return;
+    }
+
+    const nextProtocol: ProtocolTemplate = {
+      ...selected,
+      name,
+      description,
+      category: String(form.get("category") ?? selected.category) as ProtocolCategory,
+      status: String(form.get("status") ?? selected.status) as ProtocolStatus,
+      responsible: String(form.get("responsible") ?? selected.responsible),
+      updatedAt: "Agora"
+    };
+    updateSelected(nextProtocol, `Protocolo "${name}" atualizado localmente.`);
+    setEditing(false);
+  }
+
+  function addStep(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+
+    const form = new FormData(event.currentTarget);
+    const title = String(form.get("title") ?? "").trim();
+    const description = String(form.get("description") ?? "").trim();
+    const channel = String(form.get("channel") ?? "WhatsApp").trim();
+    const trigger = String(form.get("trigger") ?? "").trim();
+    if (!title || !description || !trigger) {
+      showNotice("Preencha título, descrição e gatilho da etapa.");
+      return;
+    }
+
+    const step: ProtocolStep = { id: `s-${Date.now()}`, title, description, channel, trigger };
+    updateSelected({ ...selected, steps: [...selected.steps, step], updatedAt: "Agora" }, "Etapa adicionada ao fluxo.");
+    setStepFormOpen(false);
+  }
+
+  function removeStep(stepId: string) {
+    if (!selected) return;
+    updateSelected({ ...selected, steps: selected.steps.filter((step) => step.id !== stepId), updatedAt: "Agora" }, "Etapa removida do fluxo.");
+  }
+
+  function moveStep(index: number, direction: -1 | 1) {
+    if (!selected) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= selected.steps.length) return;
+    const steps = [...selected.steps];
+    [steps[index], steps[targetIndex]] = [steps[targetIndex], steps[index]];
+    updateSelected({ ...selected, steps, updatedAt: "Agora" }, "Ordem das etapas salva localmente.");
   }
 
   function clearFilters() {
@@ -224,33 +311,73 @@ export function ProtocolsPage() {
         </div>
       )}
 
-      <Drawer open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name ?? "Protocolo"} description={selected ? `${selected.id} · ${selected.category}` : undefined} width="max-w-xl">
+      <Drawer open={Boolean(selected)} onClose={() => { setSelected(null); setEditing(false); setStepFormOpen(false); }} title={selected?.name ?? "Protocolo"} description={selected ? `${selected.id} · ${selected.category}` : undefined} width="max-w-xl">
         {selected ? (
           <div>
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-clinical-blue/[0.07] p-4">
-              <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl", categoryIconTone[selected.category])}>
-                <ProtocolIcon name={selected.icon} className="size-4" />
-              </span>
-              <Chip label={selected.status} tone={statusTone[selected.status]} />
-              <Chip label={selected.category} tone={categoryTone[selected.category]} />
-              <span className="flex items-center gap-1.5 text-xs font-bold text-clinical-muted"><UserRound className="size-3.5" />{selected.responsible}</span>
+            {notice ? <div role="status" className="mb-4 flex items-center gap-2 rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-3 py-2.5 text-xs font-bold text-clinical-green"><Check className="size-4" />{notice}</div> : null}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-clinical-blue/[0.07] p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl", categoryIconTone[selected.category])}>
+                  <ProtocolIcon name={selected.icon} className="size-4" />
+                </span>
+                <Chip label={selected.status} tone={statusTone[selected.status]} />
+                <Chip label={selected.category} tone={categoryTone[selected.category]} />
+                <span className="flex items-center gap-1.5 text-xs font-bold text-clinical-muted"><UserRound className="size-3.5" />{selected.responsible}</span>
+              </div>
+              <Button type="button" size="sm" variant="secondary" onClick={() => setEditing((value) => !value)}>{editing ? <><X className="size-3.5" />Cancelar</> : <><Pencil className="size-3.5" />Editar dados</>}</Button>
             </div>
-            <p className="mt-4 text-sm leading-6 text-clinical-slate">{selected.description}</p>
+
+            {editing ? (
+              <form key={`${selected.id}-${selected.updatedAt}`} onSubmit={saveProtocol} className="mt-4 space-y-3 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/25 p-3">
+                <ModalField name="name" label="Nome do protocolo" icon={ClipboardList} defaultValue={selected.name} required />
+                <ModalTextarea name="description" label="Descrição" icon={FileText} defaultValue={selected.description} required />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ModalSelect name="category" label="Categoria" icon={Layers3} defaultValue={selected.category}>{protocolCategories.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
+                  <ModalSelect name="status" label="Status" icon={Activity} defaultValue={selected.status}><option>Ativo</option><option>Rascunho</option><option>Inativo</option></ModalSelect>
+                  <ModalSelect name="responsible" label="Responsável" icon={UserRound} defaultValue={selected.responsible}>{Array.from(new Set(["IA + equipe", ...responsibles, selected.responsible])).map((item) => <option key={item}>{item}</option>)}</ModalSelect>
+                </div>
+                <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-3"><Button type="submit" size="sm"><Save className="size-3.5" />Salvar dados</Button></div>
+              </form>
+            ) : <p className="mt-4 text-sm leading-6 text-clinical-slate">{selected.description}</p>}
+
             <dl className="mt-5 grid grid-cols-3 gap-3">
               <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3"><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Utilizações</dt><dd className="mt-1 text-lg font-extrabold tabular-nums text-clinical-dark">{selected.uses}</dd></div>
               <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3"><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Etapas</dt><dd className="mt-1 text-lg font-extrabold tabular-nums text-clinical-dark">{selected.steps.length}</dd></div>
               <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3"><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Atualizado</dt><dd className="mt-1 text-lg font-extrabold text-clinical-dark">{selected.updatedAt}</dd></div>
             </dl>
 
-            <h3 className="mb-3 mt-7 flex items-center gap-2 text-sm font-extrabold text-clinical-dark"><ListChecks className="size-4 text-clinical-blue" />Etapas do fluxo</h3>
-            <ol className="relative space-y-0">
+            <div className="mb-3 mt-7 flex items-center justify-between gap-3">
+              <h3 className="flex items-center gap-2 text-sm font-extrabold text-clinical-dark"><ListChecks className="size-4 text-clinical-blue" />Etapas do fluxo</h3>
+              <Button type="button" size="sm" variant="secondary" onClick={() => setStepFormOpen((value) => !value)}><Plus className="size-3.5" />Adicionar etapa</Button>
+            </div>
+
+            {stepFormOpen ? (
+              <form onSubmit={addStep} className="mb-4 space-y-3 rounded-2xl border border-clinical-blue/20 bg-clinical-blue/[0.05] p-3">
+                <ModalField name="title" label="Título da etapa" icon={ListChecks} placeholder="Ex.: Confirmar dados" required />
+                <ModalTextarea name="description" label="Descrição" icon={FileText} placeholder="Descreva o que acontece nesta etapa." required />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ModalSelect name="channel" label="Canal" icon={MessageSquareText} defaultValue="WhatsApp"><option>WhatsApp</option><option>IA + recepção</option><option>Sistema</option><option>Recepção</option><option>Telefone</option></ModalSelect>
+                  <ModalField name="trigger" label="Gatilho" icon={RefreshCw} placeholder="Ex.: Resposta do paciente" required />
+                </div>
+                <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setStepFormOpen(false)}>Cancelar</Button><Button type="submit" size="sm"><Plus className="size-3.5" />Salvar etapa</Button></div>
+              </form>
+            ) : null}
+
+            {selected.steps.length === 0 ? <StatePanel icon={ListChecks} title="Nenhuma etapa configurada" description="Adicione a primeira etapa para começar a montar este fluxo." action={<Button type="button" size="sm" variant="secondary" onClick={() => setStepFormOpen(true)}><Plus className="size-3.5" />Adicionar etapa</Button>} /> : <ol className="relative space-y-0">
               {selected.steps.map((step, index) => (
                 <li key={step.id} className="relative flex gap-3.5 pb-5 last:pb-0">
                   {index < selected.steps.length - 1 ? <span className="absolute left-[17px] top-9 h-[calc(100%-28px)] w-px bg-clinical-border/[0.16]" aria-hidden="true" /> : null}
                   <span className="relative z-10 flex size-[34px] shrink-0 items-center justify-center rounded-xl border border-clinical-blue/25 bg-clinical-blue/10 text-[13px] font-black text-clinical-blue">{index + 1}</span>
                   <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="text-sm font-extrabold text-clinical-dark">{step.title}</p>
-                    <p className="mt-1 text-[13px] leading-5 text-clinical-muted">{step.description}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0"><p className="text-sm font-extrabold text-clinical-dark">{step.title}</p><p className="mt-1 text-[13px] leading-5 text-clinical-muted">{step.description}</p></div>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        <GripVertical className="mr-1 size-4 text-clinical-border" aria-hidden="true" />
+                        <button type="button" disabled={index === 0} onClick={() => moveStep(index, -1)} aria-label={`Mover ${step.title} para cima`} className="flex size-7 items-center justify-center rounded-lg text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-30"><ArrowUp className="size-3.5" /></button>
+                        <button type="button" disabled={index === selected.steps.length - 1} onClick={() => moveStep(index, 1)} aria-label={`Mover ${step.title} para baixo`} className="flex size-7 items-center justify-center rounded-lg text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-30"><ArrowDown className="size-3.5" /></button>
+                        <button type="button" onClick={() => removeStep(step.id)} aria-label={`Remover ${step.title}`} className="flex size-7 items-center justify-center rounded-lg text-clinical-muted transition hover:bg-red-500/10 hover:text-red-500"><Trash2 className="size-3.5" /></button>
+                      </div>
+                    </div>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <span className="inline-flex items-center gap-1 rounded-full bg-clinical-whatsapp/10 px-2.5 py-1 text-[11px] font-extrabold text-clinical-whatsapp"><Bot className="size-3" />{step.channel}</span>
                       <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-muted"><RefreshCw className="size-3" />{step.trigger}</span>
@@ -258,7 +385,7 @@ export function ProtocolsPage() {
                   </div>
                 </li>
               ))}
-            </ol>
+            </ol>}
 
             <div className="mt-7 flex items-center gap-2 rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.07] p-3 text-xs font-semibold leading-5 text-clinical-slate">
               <Bot className="size-4 shrink-0 text-clinical-green" />
@@ -271,6 +398,7 @@ export function ProtocolsPage() {
       <Modal open={newOpen} onClose={() => setNewOpen(false)} title="Novo protocolo" eyebrow="Automação clínica" description="Crie um fluxo de atendimento padronizado para a equipe e a IA." icon={ClipboardList} className="max-w-xl">
         <form onSubmit={createProtocol} className="space-y-4">
           <ModalField name="name" label="Nome do protocolo" icon={ClipboardList} placeholder="Ex.: Pré-cirurgia, Acolhimento por telefone" required />
+          <ModalTextarea name="description" label="Descrição" icon={FileText} placeholder="Explique quando este fluxo deve ser usado e qual resultado ele busca." required />
           <div className="grid gap-4 sm:grid-cols-2">
             <ModalSelect name="category" label="Categoria" icon={Layers3} defaultValue="Atendimento">{protocolCategories.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
             <ModalSelect name="status" label="Status" icon={Activity} defaultValue="Rascunho"><option>Rascunho</option><option>Ativo</option><option>Inativo</option></ModalSelect>
@@ -309,11 +437,22 @@ export function ProtocolsPage() {
               Colocar responsável
             </label>
             {assignResponsible ? (
-              <div className="w-44 shrink-0"><Dropdown label="Responsável" value={responsibleValue} options={[ALL, ...responsibles]} onChange={setResponsibleValue} /></div>
+              <div className="w-52 shrink-0"><ModalSelect name="responsible" label="Responsável" icon={UserRound} value={responsibleValue} onChange={(event) => setResponsibleValue(event.target.value)}>{[ALL, ...responsibles].map((item) => <option key={item}>{item}</option>)}</ModalSelect></div>
             ) : (
               <span className="shrink-0 text-xs font-semibold text-clinical-muted">IA + equipe</span>
             )}
           </div>
+          <fieldset className="rounded-2xl border border-clinical-border/[0.12] p-3.5">
+            <legend className="px-1.5 text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">Primeira etapa</legend>
+            <div className="space-y-3">
+              <ModalField name="stepTitle" label="Título" icon={ListChecks} placeholder="Ex.: Boas-vindas" required />
+              <ModalTextarea name="stepDescription" label="Descrição da etapa" icon={FileText} placeholder="Descreva a ação da IA ou da equipe." required />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ModalSelect name="stepChannel" label="Canal" icon={MessageSquareText} defaultValue="WhatsApp"><option>WhatsApp</option><option>IA + recepção</option><option>Sistema</option><option>Recepção</option><option>Telefone</option></ModalSelect>
+                <ModalField name="stepTrigger" label="Gatilho" icon={RefreshCw} placeholder="Ex.: Novo contato detectado" required />
+              </div>
+            </div>
+          </fieldset>
           <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
             <Button type="button" variant="ghost" onClick={() => setNewOpen(false)}>Cancelar</Button>
             <Button type="submit"><Plus className="size-4" />Criar protocolo</Button>

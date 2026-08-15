@@ -56,7 +56,10 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
   return (
     <div ref={ref} className={cn("relative", className)}>
       <button
+        type="button"
         onClick={() => setOpen((current) => !current)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className={cn(
           "flex h-11 w-full items-center justify-between gap-2 rounded-2xl border px-3.5 text-[14px] font-bold transition duration-300 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
           open
@@ -73,6 +76,9 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
         ? createPortal(
             <div
               ref={menuRef}
+              role="listbox"
+              aria-label={label}
+              onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); }}
               style={{ position: "fixed", top: coords.top, left: coords.left, zIndex: 9999 }}
               className="min-w-[190px] origin-top rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface/95 p-2 shadow-clinical backdrop-blur-xl dark:border-white/[0.08]"
             >
@@ -81,6 +87,9 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
                 return (
                   <button
                     key={option}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
                     onClick={() => {
                       onChange(option);
                       setOpen(false);

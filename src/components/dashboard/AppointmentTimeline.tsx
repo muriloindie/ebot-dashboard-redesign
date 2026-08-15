@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Bot, CalendarClock, CheckCircle2, Clock3, MessageCircle, UserRound } from "lucide-react";
 import { agendaDates, appointments } from "@/data/dashboardMock";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +20,8 @@ const appointmentIcons = {
 
 export function AppointmentTimeline() {
   const [activeDate, setActiveDate] = useState(agendaDates[0]);
+  const router = useRouter();
+  const visibleAppointments = appointments.filter((appointment) => appointment.day === activeDate);
 
   return (
     <GlassCard data-right-panel className="h-full min-w-0 overflow-hidden p-4 sm:p-5 lg:p-6">
@@ -38,6 +41,7 @@ export function AppointmentTimeline() {
         {agendaDates.map((date) => (
           <button
             key={date}
+            type="button"
             onClick={() => setActiveDate(date)}
             className={cn(
               "shrink-0 rounded-2xl border px-4 py-2.5 text-[14px] font-extrabold transition focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
@@ -50,7 +54,7 @@ export function AppointmentTimeline() {
       </div>
 
       <div className="mt-5 max-w-full space-y-3.5">
-        {appointments.map((appointment) => {
+        {visibleAppointments.length ? visibleAppointments.map((appointment) => {
           const Icon = appointmentIcons[appointment.tone];
           return (
             <div key={`${appointment.time}-${appointment.title}`} className="relative grid min-w-0 grid-cols-[48px_minmax(0,1fr)] gap-2.5 sm:grid-cols-[58px_minmax(0,1fr)] sm:gap-3">
@@ -72,10 +76,10 @@ export function AppointmentTimeline() {
               </div>
             </div>
           );
-        })}
+        }) : <div className="rounded-2xl border border-dashed border-clinical-border/[0.16] p-6 text-center text-sm font-semibold text-clinical-muted">Nenhum horário crítico neste período.</div>}
       </div>
 
-      <Button variant="secondary" className="mt-6 w-full">
+      <Button variant="secondary" className="mt-6 w-full" onClick={() => router.push("/agenda")}>
         Ver agenda completa <ArrowRight className="size-4" />
       </Button>
     </GlassCard>

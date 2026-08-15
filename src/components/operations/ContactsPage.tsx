@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarClock, Camera, Check, Download, FileDown, FileUp, Headphones, Mail, Phone, RadioTower, RefreshCw, SearchX, Star, Tags, UploadCloud, UserPlus, UserRound, UserRoundCheck, UserX, X } from "lucide-react";
-import { contacts, contactStages, type Contact, type ContactStage } from "@/data/contactsMock";
+import { CalendarClock, Camera, Check, Download, FileDown, FileUp, Headphones, Mail, Pencil, Phone, RadioTower, RefreshCw, Save, SearchX, Star, Tags, UploadCloud, UserPlus, UserRound, UserRoundCheck, UserX, X } from "lucide-react";
+import { contacts, contactChannels, contactStages, type Contact, type ContactStage } from "@/data/contactsMock";
+import { patients, type Patient } from "@/data/patientsMock";
 import { readLocalCache, writeLocalCache } from "@/lib/localCache";
 import { usePageEnter } from "@/lib/usePageEnter";
 import { Button } from "@/components/ui/Button";
@@ -17,7 +18,13 @@ import { PageHeader, SearchField, StatePanel, StatusBadge, TableCell, TableHeade
 import { cn } from "@/lib/cn";
 
 const CACHE_KEY = "ebot-week2-contacts";
+const PATIENTS_CACHE_KEY = "ebot-week2-patients";
 const ALL = "Todos";
+
+type ContactRecord = Contact & {
+  origin?: string;
+  responsible?: string;
+};
 
 const stageTone: Record<ContactStage, "blue" | "orange" | "green" | "neutral"> = {
   "Novo contato": "blue",
@@ -90,13 +97,16 @@ export function ContactsPage() {
   const router = useRouter();
   const pageRef = useRef<HTMLDivElement>(null);
   const drawerPhotoRef = useRef<HTMLInputElement>(null);
-  const [rows, setRows] = useState<Contact[]>(contacts);
+  const [rows, setRows] = useState<ContactRecord[]>(contacts);
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState(ALL);
+  const [origin, setOrigin] = useState(ALL);
+  const [responsible, setResponsible] = useState(ALL);
   const [channel, setChannel] = useState(ALL);
   const [tag, setTag] = useState(ALL);
-  const [selected, setSelected] = useState<Contact | null>(null);
+  const [selected, setSelected] = useState<ContactRecord | null>(null);
   const [modal, setModal] = useState<"add" | "import" | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [newPhoto, setNewPhoto] = useState<string | undefined>(undefined);
   const [notice, setNotice] = useState("");
 
@@ -106,22 +116,26 @@ export function ContactsPage() {
     { selector: "[data-contact-row]", from: { opacity: 0, x: -12 }, to: { duration: 0.3, ease: "power2.out" } }
   ], { stagger: 0.04, delay: 0.05 });
 
-  useEffect(() => setRows(readLocalCache(CACHE_KEY, contacts)), []);
+  useEffect(() => setRows(readLocalCache<ContactRecord[]>(CACHE_KEY, contacts)), []);
 
   const channels = Array.from(new Set(rows.map((row) => row.channel)));
-  const tags = Array.from(new Set(rows.flatMap((row) => row.tags))).sort();
-  const hasFilters = stage !== ALL || channel !== ALL || tag !== ALL;
+  const origins = Array.from(new Set(rows.map((row) => row.origin).filter((value): value is string => Boolean(value)))).sort();
+  const responsibles = Array.from(new Set(rows.map((row) => row.responsible).filter((value): value is string => Boolean(value)))).sort();
+  const tags = Array.from(new Set(rows.flatMap((row) => row.tags).filter((value) => value.trim()))).sort();
+  const hasFilters = stage !== ALL || origin !== ALL || responsible !== ALL || channel !== ALL || tag !== ALL;
 
   const filtered = useMemo(() => {
     const query = search.toLowerCase();
     return rows.filter((row) => {
-      const matchesSearch = `${row.name} ${row.email} ${row.whatsapp} ${row.id} ${row.tags.join(" ")}`.toLowerCase().includes(query);
+      const matchesSearch = `${row.name} ${row.email} ${row.whatsapp} ${row.id} ${row.origin ?? ""} ${row.responsible ?? ""} ${row.tags.join(" ")}`.toLowerCase().includes(query);
       const matchesStage = stage === ALL || row.stage === stage;
+      const matchesOrigin = origin === ALL || row.origin === origin;
+      const matchesResponsible = responsible === ALL || row.responsible === responsible;
       const matchesChannel = channel === ALL || row.channel === channel;
       const matchesTag = tag === ALL || row.tags.includes(tag);
-      return matchesSearch && matchesStage && matchesChannel && matchesTag;
+      return matchesSearch && matchesStage && matchesOrigin && matchesResponsible && matchesChannel && matchesTag;
     });
-  }, [rows, search, stage, channel, tag]);
+  }, [rows, search, stage, origin, responsible, channel, tag]);
 
   const counts = useMemo(() => {
     const map = new Map<ContactStage, number>();
@@ -134,7 +148,7 @@ export function ContactsPage() {
     window.setTimeout(() => setNotice(""), 3200);
   }
 
-  function persist(next: Contact[]) {
+  function persist(next: ContactRecord[]) {
     setRows(next);
     writeLocalCache(CACHE_KEY, next);
   }
@@ -151,19 +165,57 @@ export function ContactsPage() {
     showNotice(photo ? "Foto de perfil atualizada." : "Foto de perfil removida.");
   }
 
+  function updateContact(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+
+    const form = new FormData(event.currentTarget);
+    const name = String(form.get("name") ?? "").trim();
+    const whatsapp = String(form.get("whatsapp") ?? "").trim();
+    if (!name || !whatsapp) {
+      showNotice("Informe o nome e o WhatsApp do contato.");
+      return;
+    }
+
+    const nextContact: ContactRecord = {
+      ...selected,
+      name,
+      whatsapp,
+      email: String(form.get("email") ?? "").trim(),
+      channel: String(form.get("channel") ?? selected.channel) as Contact["channel"],
+      stage: String(form.get("stage") ?? selected.stage) as ContactStage,
+      origin: String(form.get("origin") ?? "").trim() || undefined,
+      responsible: String(form.get("responsible") ?? "").trim() || undefined
+    };
+    const nextRows = rows.map((row) => row.id === selected.id ? nextContact : row);
+    persist(nextRows);
+    setSelected(nextContact);
+    setEditOpen(false);
+    showNotice("Dados do contato salvos localmente.");
+  }
+
   function addContact(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const next: Contact = {
+    const name = String(form.get("name") ?? "").trim();
+    const whatsapp = String(form.get("whatsapp") ?? "").trim();
+    if (!name || !whatsapp) {
+      showNotice("Informe o nome e o WhatsApp do contato.");
+      return;
+    }
+    const tagValue = String(form.get("tag") ?? "").trim();
+    const next: ContactRecord = {
       id: `CT-${String(rows.length + 212)}`,
-      name: String(form.get("name")),
-      whatsapp: String(form.get("whatsapp")),
-      email: String(form.get("email")),
-      channel: String(form.get("channel")) as Contact["channel"],
-      stage: String(form.get("stage")) as ContactStage,
+      name,
+      whatsapp,
+      email: String(form.get("email") ?? "").trim(),
+      channel: String(form.get("channel") ?? "WhatsApp") as Contact["channel"],
+      stage: String(form.get("stage") ?? "Novo contato") as ContactStage,
       lastSeen: "Agora",
-      tags: [String(form.get("tag") ?? "Novo")],
-      photo: newPhoto
+      tags: tagValue ? [tagValue] : [],
+      photo: newPhoto,
+      origin: String(form.get("origin") ?? "").trim() || undefined,
+      responsible: String(form.get("responsible") ?? "").trim() || undefined
     };
     persist([next, ...rows]);
     setModal(null);
@@ -171,9 +223,67 @@ export function ContactsPage() {
     showNotice("Contato adicionado à base local.");
   }
 
+  function addTag(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+
+    const tagValue = String(new FormData(event.currentTarget).get("tag") ?? "").trim();
+    if (!tagValue) {
+      showNotice("Digite uma etiqueta antes de adicionar.");
+      return;
+    }
+    if (selected.tags.includes(tagValue)) {
+      showNotice("Essa etiqueta já está no contato.");
+      return;
+    }
+
+    const nextContact = { ...selected, tags: [...selected.tags, tagValue] };
+    persist(rows.map((row) => row.id === selected.id ? nextContact : row));
+    setSelected(nextContact);
+    event.currentTarget.reset();
+    showNotice(`Etiqueta "${tagValue}" adicionada.`);
+  }
+
+  function convertToPatient(id: string) {
+    const contact = rows.find((row) => row.id === id);
+    if (!contact) return;
+
+    const currentPatients = readLocalCache<Patient[]>(PATIENTS_CACHE_KEY, patients);
+    const existingPatient = currentPatients.find((patient) => (contact.whatsapp && patient.phone === contact.whatsapp) || (contact.email && patient.email === contact.email));
+    if (!existingPatient) {
+      const highestId = currentPatients.reduce((highest, patient) => Math.max(highest, Number(patient.id.match(/(\d+)$/)?.[1] ?? 0)), 0);
+      const patient: Patient = {
+        id: `PAC-${String(highestId + 1).padStart(4, "0")}`,
+        name: contact.name,
+        phone: contact.whatsapp,
+        email: contact.email,
+        cpf: "",
+        birthDate: "",
+        gender: "Feminino",
+        tags: Array.from(new Set(["Paciente", ...contact.tags.filter((item) => item.trim() && item !== "Lead")])),
+        professional: contact.responsible ?? "IA + equipe",
+        unit: "Unidade Centro",
+        status: "Novo",
+        lastAppointment: "—",
+        nextAppointment: "—",
+        notes: `Convertido a partir do contato ${contact.id}.`,
+        history: [{ id: `h-${Date.now()}`, type: "Atendimento", title: "Contato convertido em paciente", date: "Hoje", detail: "Registro criado localmente a partir da base de contatos." }],
+        nextEvents: []
+      };
+      writeLocalCache(PATIENTS_CACHE_KEY, [patient, ...currentPatients]);
+    }
+
+    const nextContact: ContactRecord = { ...contact, stage: "Convertido", tags: Array.from(new Set([...contact.tags.filter((item) => item.trim()), "Paciente"])) };
+    persist(rows.map((row) => row.id === id ? nextContact : row));
+    if (selected?.id === id) setSelected(nextContact);
+    showNotice(existingPatient ? `${contact.name} já estava na base de pacientes.` : `${contact.name} convertido(a) em paciente.`);
+  }
+
   function clearFilters() {
     setSearch("");
     setStage(ALL);
+    setOrigin(ALL);
+    setResponsible(ALL);
     setChannel(ALL);
     setTag(ALL);
   }
@@ -245,10 +355,12 @@ export function ContactsPage() {
 
       <div data-search-bar className="mb-4 flex flex-col gap-2 rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/70 p-2.5 lg:flex-row lg:items-center">
         <SearchField value={search} onChange={setSearch} placeholder="Pesquisar por nome, telefone, e-mail ou etiqueta" />
-        <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3">
-          <Dropdown label="Estado" value={stage} options={[ALL, ...contactStages]} onChange={setStage} />
+        <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+          <Dropdown label="Status" value={stage} options={[ALL, ...contactStages]} onChange={setStage} />
+          {origins.length ? <Dropdown label="Origem" value={origin} options={[ALL, ...origins]} onChange={setOrigin} /> : null}
+          {responsibles.length ? <Dropdown label="Responsável" value={responsible} options={[ALL, ...responsibles]} onChange={setResponsible} /> : null}
           <Dropdown label="Canal" value={channel} options={[ALL, ...channels]} onChange={setChannel} />
-          <Dropdown label="Etiqueta" value={tag} options={[ALL, ...tags]} onChange={setTag} />
+          <Dropdown label="Tags" value={tag} options={[ALL, ...tags]} onChange={setTag} />
         </div>
         {hasFilters ? (
           <Button variant="secondary" size="sm" onClick={clearFilters} className="shrink-0"><X className="size-4" />Limpar</Button>
@@ -264,10 +376,12 @@ export function ContactsPage() {
         />
       ) : (
         <TableSurface caption="Lista de contatos">
-          <TableHead>
-            <TableHeaderCell>Contato</TableHeaderCell>
-            <TableHeaderCell>Canal</TableHeaderCell>
-            <TableHeaderCell>Estado</TableHeaderCell>
+           <TableHead>
+             <TableHeaderCell>Contato</TableHeaderCell>
+             <TableHeaderCell>Canal</TableHeaderCell>
+             <TableHeaderCell>Origem</TableHeaderCell>
+             <TableHeaderCell>Responsável</TableHeaderCell>
+          <TableHeaderCell>Status</TableHeaderCell>
             <TableHeaderCell>Última atividade</TableHeaderCell>
             <TableHeaderCell>Tags</TableHeaderCell>
             <TableHeaderCell>Ações</TableHeaderCell>
@@ -288,8 +402,10 @@ export function ContactsPage() {
                   <span className="flex items-center gap-2 font-semibold text-clinical-slate"><ChannelIcon channel={contact.channel} />{contact.channel}</span>
                   <span className="mt-1 block text-xs font-semibold text-clinical-muted">{contact.whatsapp}</span>
                 </TableCell>
+                <TableCell><span className={cn("font-semibold", contact.origin ? "text-clinical-slate" : "text-clinical-muted")}>{contact.origin ?? "—"}</span></TableCell>
+                <TableCell><span className={cn("font-semibold", contact.responsible ? "text-clinical-slate" : "text-clinical-muted")}>{contact.responsible ?? "—"}</span></TableCell>
                 <TableCell>
-                  <label className="sr-only" htmlFor={`stage-${contact.id}`}>Estado de {contact.name}</label>
+                  <label className="sr-only" htmlFor={`stage-${contact.id}`}>Status de {contact.name}</label>
                   <select
                     id={`stage-${contact.id}`}
                     value={contact.stage}
@@ -307,6 +423,7 @@ export function ContactsPage() {
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <button type="button" onClick={() => setSelected(contact)} aria-label={`Ver ${contact.name}`} className="flex size-9 items-center justify-center rounded-xl text-clinical-blue transition hover:bg-clinical-blue/10"><UserRound className="size-4" /></button>
+                    <button type="button" onClick={() => { setSelected(contact); setEditOpen(true); }} aria-label={`Editar ${contact.name}`} className="flex size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue"><Pencil className="size-4" /></button>
                     <button type="button" onClick={() => router.push("/atendimentos")} aria-label={`Atender ${contact.name}`} className="flex size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue"><Headphones className="size-4" /></button>
                   </div>
                 </TableCell>
@@ -316,9 +433,10 @@ export function ContactsPage() {
         </TableSurface>
       )}
 
-      <Drawer open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name ?? "Contato"} description={selected ? `${selected.id} · ${selected.stage}` : undefined}>
+      <Drawer open={Boolean(selected)} onClose={() => { setSelected(null); setEditOpen(false); }} title={selected?.name ?? "Contato"} description={selected ? `${selected.id} · ${selected.stage}` : undefined}>
         {selected ? (
           <div>
+            {notice ? <div role="status" className="mb-4 flex items-center gap-2 rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-3 py-2.5 text-xs font-bold text-clinical-green"><Check className="size-4" />{notice}</div> : null}
             <div className="rounded-2xl bg-clinical-blue/[0.07] p-4">
               <div className="flex items-center gap-4">
                 <span className="relative shrink-0">
@@ -367,6 +485,8 @@ export function ContactsPage() {
               <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-green"><Phone className="size-4" /></span><div><dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">WhatsApp</dt><dd className="text-sm font-bold text-clinical-dark">{selected.whatsapp}</dd></div></div>
               <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-blue"><Mail className="size-4" /></span><div><dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">E-mail</dt><dd className="text-sm font-bold text-clinical-dark">{selected.email}</dd></div></div>
               <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-teal"><ChannelIcon channel={selected.channel} /></span><div><dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">Canal de origem</dt><dd className="text-sm font-bold text-clinical-dark">{selected.channel}</dd></div></div>
+              <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-blue"><Tags className="size-4" /></span><div><dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">Origem</dt><dd className="text-sm font-bold text-clinical-dark">{selected.origin ?? "Não informada"}</dd></div></div>
+              <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-orange"><UserRound className="size-4" /></span><div><dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">Responsável</dt><dd className="text-sm font-bold text-clinical-dark">{selected.responsible ?? "Não atribuído"}</dd></div></div>
             </dl>
 
             <div className="mt-7">
@@ -385,26 +505,66 @@ export function ContactsPage() {
               </div>
             </div>
 
+            <div className="mt-7">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-extrabold text-clinical-dark">Etiquetas</h3>
+                <span className="text-xs font-semibold text-clinical-muted">{selected.tags.length} cadastradas</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">{selected.tags.length ? selected.tags.map((item) => <StatusBadge key={item} label={item} tone="neutral" />) : <span className="text-xs font-semibold text-clinical-muted">Nenhuma etiqueta cadastrada.</span>}</div>
+              <form onSubmit={addTag} className="mt-3 flex gap-2">
+                <label className="flex min-w-0 flex-1 items-center rounded-xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/35 px-3 focus-within:border-clinical-blue/45 focus-within:ring-2 focus-within:ring-clinical-blue/10">
+                  <span className="sr-only">Nova etiqueta</span>
+                  <input name="tag" placeholder="Adicionar etiqueta" className="min-w-0 flex-1 bg-transparent py-2 text-sm font-semibold text-clinical-dark outline-none placeholder:text-clinical-muted/65" />
+                </label>
+                <Button type="submit" size="sm" variant="secondary"><Tags className="size-3.5" />Adicionar</Button>
+              </form>
+            </div>
+
             <div className="mt-7 flex flex-wrap gap-2 border-t border-clinical-border/[0.12] pt-5">
-              <Button onClick={() => { setSelected(null); router.push("/atendimentos"); }}><Headphones className="size-4" />Iniciar atendimento</Button>
+              <Button type="button" variant="secondary" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar contato</Button>
+              <Button type="button" onClick={() => { setSelected(null); router.push("/atendimentos"); }}><Headphones className="size-4" />Iniciar atendimento</Button>
               {selected.stage !== "Convertido" ? (
-                <Button variant="secondary" onClick={() => changeStage(selected.id, "Convertido")}><Check className="size-4" />Marcar como convertido</Button>
-              ) : null}
+                <Button type="button" variant="secondary" onClick={() => convertToPatient(selected.id)}><UserRoundCheck className="size-4" />Converter em paciente</Button>
+              ) : (
+                <span className="inline-flex items-center gap-2 rounded-full bg-clinical-green/[0.10] px-3.5 py-2 text-[13px] font-extrabold text-clinical-green"><Check className="size-4" />Paciente convertido</span>
+              )}
             </div>
           </div>
         ) : null}
       </Drawer>
+
+      <Modal open={editOpen && Boolean(selected)} onClose={() => setEditOpen(false)} title="Editar contato" eyebrow="Base de relacionamento" description={selected ? `Atualize os dados de ${selected.name}.` : undefined} icon={Pencil} className="max-w-2xl">
+        {selected ? (
+          <form key={selected.id} onSubmit={updateContact} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ModalField name="name" label="Nome completo" icon={UserRound} defaultValue={selected.name} required />
+              <ModalSelect name="stage" label="Status" icon={Tags} defaultValue={selected.stage}>{contactStages.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
+              <ModalField name="whatsapp" label="WhatsApp" icon={Phone} defaultValue={selected.whatsapp} required />
+              <ModalField name="email" label="E-mail" icon={Mail} type="email" defaultValue={selected.email} />
+              <ModalSelect name="channel" label="Canal de origem" icon={RadioTower} defaultValue={selected.channel}>{contactChannels.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
+              <ModalField name="origin" label="Origem" icon={Tags} defaultValue={selected.origin ?? ""} placeholder="Ex.: Campanha de retorno" />
+              <ModalField name="responsible" label="Responsável" icon={UserRound} defaultValue={selected.responsible ?? ""} placeholder="Ex.: Marina Costa" />
+            </div>
+            <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
+              <Button type="button" variant="ghost" onClick={() => setEditOpen(false)}>Cancelar</Button>
+              <Button type="submit"><Save className="size-4" />Salvar contato</Button>
+            </div>
+          </form>
+        ) : null}
+      </Modal>
 
       <Modal open={modal === "add"} onClose={() => setModal(null)} title="Adicionar contato" eyebrow="Base de relacionamento" description="Registre um novo contato, com foto opcional, e escolha a etapa do funil em que ele entra." icon={UserPlus} className="max-w-2xl">
         <form onSubmit={addContact} className="space-y-4">
           <PhotoPicker value={newPhoto} name="Novo contato" onChange={setNewPhoto} />
           <div className="grid gap-4 sm:grid-cols-2">
             <ModalField name="name" label="Nome completo" icon={UserRound} placeholder="Ex.: Camila Rodrigues" required />
-            <ModalSelect name="stage" label="Estado inicial" icon={Tags} defaultValue="Novo contato">{contactStages.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
-            <ModalSelect name="channel" label="Canal de origem" icon={RadioTower} defaultValue="WhatsApp"><option>WhatsApp</option><option>Instagram</option><option>E-mail</option><option>Telefone</option><option>Site</option></ModalSelect>
+            <ModalSelect name="stage" label="Status inicial" icon={Tags} defaultValue="Novo contato">{contactStages.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
+            <ModalSelect name="channel" label="Canal de origem" icon={RadioTower} defaultValue="WhatsApp">{contactChannels.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
             <ModalField name="whatsapp" label="WhatsApp" icon={Phone} placeholder="+55 11 99999-9999" required />
             <ModalField name="email" label="E-mail" icon={Mail} type="email" placeholder="contato@email.com" required />
             <ModalField name="tag" label="Etiqueta" icon={Tags} placeholder="Ex.: Convênio, Retorno" />
+            <ModalField name="origin" label="Origem" icon={Tags} placeholder="Ex.: Campanha de retorno" />
+            <ModalField name="responsible" label="Responsável" icon={UserRound} placeholder="Ex.: Marina Costa" />
           </div>
           <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
             <Button type="button" variant="ghost" onClick={() => setModal(null)}>Cancelar</Button>

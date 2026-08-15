@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
 import { X } from "lucide-react";
@@ -10,6 +10,9 @@ export function Drawer({ open, onClose, title, description, children, width = "m
   const [rendered, setRendered] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = `${useId().replace(/:/g, "")}-title`;
+  const descriptionId = `${useId().replace(/:/g, "")}-description`;
 
   useEffect(() => {
     if (open) {
@@ -35,19 +38,41 @@ export function Drawer({ open, onClose, title, description, children, width = "m
 
   useEffect(() => {
     if (!rendered) return;
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    const frame = requestAnimationFrame(() => {
+      const firstFocusable = panelRef.current?.querySelector<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+      firstFocusable?.focus();
+    });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")).filter((element) => !element.hasAttribute("disabled"));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener("keydown", onKeyDown);
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", onKeyDown); document.body.style.overflow = previous; };
+    return () => { cancelAnimationFrame(frame); document.removeEventListener("keydown", onKeyDown); document.body.style.overflow = previous; previousFocusRef.current?.focus?.(); };
   }, [rendered, onClose]);
 
   if (!rendered || typeof document === "undefined") return null;
   return createPortal(
     <div ref={backdropRef} className="fixed inset-0 z-[90] flex justify-end bg-clinical-charcoal/30 backdrop-blur-[3px] opacity-0" role="presentation" onMouseDown={onClose}>
-      <aside ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="drawer-title" className={cn("flex h-full w-full flex-col border-l border-clinical-border/[0.14] bg-clinical-surface shadow-2xl", width)} onMouseDown={(event) => event.stopPropagation()}>
+      <aside ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined} className={cn("flex h-full w-full flex-col border-l border-clinical-border/[0.14] bg-clinical-surface shadow-2xl", width)} onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 border-b border-clinical-border/[0.12] px-5 py-5 sm:px-6">
-          <div><h2 id="drawer-title" className="text-lg font-extrabold tracking-tight text-clinical-dark">{title}</h2>{description ? <p className="mt-1 text-sm leading-5 text-clinical-muted">{description}</p> : null}</div>
+          <div><h2 id={titleId} className="text-lg font-extrabold tracking-tight text-clinical-dark">{title}</h2>{description ? <p id={descriptionId} className="mt-1 text-sm leading-5 text-clinical-muted">{description}</p> : null}</div>
           <button type="button" onClick={onClose} aria-label="Fechar painel" className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-clinical-border/[0.12] text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"><X className="size-4" /></button>
         </div>
         <div className="clinical-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>

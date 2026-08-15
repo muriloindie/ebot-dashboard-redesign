@@ -28,6 +28,7 @@ export type Attendance = {
   unread: number;
   startedAt: string;
   duration: string;
+  dateOffset?: number;
   messages: AttendanceMessage[];
 };
 
@@ -298,6 +299,7 @@ export const attendances: Attendance[] = [
     unread: 0,
     startedAt: "08:02",
     duration: "17 min",
+    dateOffset: -1,
     messages: [
       { id: "m1", from: "patient", text: "Prezados, gostaria de saber se o plano SulAmérica é aceito para fisioterapia.", time: "08:02" },
       { id: "m2", from: "human", text: "Olá, Henrique! O SulAmérica é aceito para fisioterapia na Unidade Norte. Vou enviar a tabela de procedimentos credenciados para você.", time: "08:12" },
@@ -321,6 +323,7 @@ export const attendances: Attendance[] = [
     unread: 1,
     startedAt: "07:58",
     duration: "09 min",
+    dateOffset: -2,
     messages: [
       { id: "m1", from: "patient", text: "Fiz uma cirurgia há 3 semanas e o Dr. Ricardo pediu retorno em 10 dias. Pode me agendar o mais cedo possível?", time: "07:58" },
       { id: "m2", from: "ai", text: "Oi, Juliana! Que bom saber que você está se recuperando. Vou verificar os retornos do Dr. Ricardo para esta semana.", time: "08:00" },

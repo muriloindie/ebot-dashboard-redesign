@@ -13,8 +13,10 @@ import { MetricCard } from "./MetricCard";
 import { NewFlowModal } from "./NewFlowModal";
 import { RecentConversations } from "./RecentConversations";
 import { SmartFilters } from "./SmartFilters";
+import type { DashboardFilters } from "./SmartFilters";
 import { TeamPerformanceTable } from "./TeamPerformanceTable";
 import { WaveLineChart } from "./WaveLineChart";
+import { RealtimeOperation } from "./RealtimeOperation";
 
 const iconMap: Record<string, React.ElementType> = {
   MessageCircle,
@@ -31,6 +33,17 @@ export function DashboardPage() {
   const ref = useRef<HTMLDivElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [newFlowOpen, setNewFlowOpen] = useState(false);
+  const [filters, setFilters] = useState<DashboardFilters>({ period: "Hoje", channel: "Todos", status: "Todos", unit: "Clínica Geral" });
+
+  const filterFactor = (() => {
+    let factor = filters.period === "7 dias" ? 0.84 : filters.period === "30 dias" ? 0.72 : filters.period === "Personalizado" ? 0.61 : 1;
+    if (filters.channel !== "Todos") factor *= 0.78;
+    if (filters.status === "Aguardando") factor *= 0.2;
+    if (filters.status === "IA resolveu") factor *= 0.68;
+    if (filters.status === "Humano assumiu") factor *= 0.32;
+    if (filters.unit !== "Clínica Geral") factor *= 0.46;
+    return Math.max(factor, 0.08);
+  })();
 
   useEffect(() => {
     if (!ref.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -61,18 +74,20 @@ export function DashboardPage() {
   return (
     <div ref={ref} className="space-y-4 sm:space-y-5 lg:space-y-6">
       <DashboardHeader />
-      <SmartFilters />
+      <SmartFilters filters={filters} onChange={setFilters} />
 
       <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-8 xl:gap-3">
         {metrics.map((metric) => (
-          <MetricCard key={metric.id} metric={metric} icon={iconMap[metric.icon]} />
+          <MetricCard key={metric.id} metric={{ ...metric, value: Math.max(1, Math.round(metric.value * filterFactor)) }} icon={iconMap[metric.icon]} />
         ))}
       </section>
 
       <section className="grid min-w-0 items-stretch gap-4 lg:gap-6 2xl:grid-cols-[minmax(0,0.92fr)_minmax(460px,0.72fr)]">
-        <WaveLineChart />
+        <WaveLineChart scale={filterFactor} />
         <AppointmentTimeline />
       </section>
+
+      <RealtimeOperation />
 
       <section className="grid gap-4 lg:gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(380px,0.72fr)]">
         <AutomationInsights />

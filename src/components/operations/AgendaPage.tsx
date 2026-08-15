@@ -38,6 +38,7 @@ const ALL = "Todos";
 const DAY_START = 7 * 60;
 const DAY_END = 19 * 60;
 const PX_PER_MIN = 1.1;
+const appointmentUnits: AppointmentUnit[] = ["Unidade Centro", "Unidade Norte", "Unidade Sul"];
 
 const statusStyle: Record<AppointmentStatus, { block: string; chip: "blue" | "orange" | "green" | "neutral" | "red"; label: string }> = {
   Confirmada: { block: "border-clinical-blue/25 bg-clinical-blue/[0.10]", chip: "blue", label: "Confirmada" },
@@ -70,6 +71,22 @@ function toDate(offset: number) {
 function timeToMinutes(time: string) {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
+}
+
+function isValidTime(time: string) {
+  if (!/^\d{2}:\d{2}$/.test(time)) return false;
+  const minutes = timeToMinutes(time);
+  return Number.isInteger(minutes) && minutes >= 0 && minutes < 24 * 60;
+}
+
+function parseDateInput(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) || dateKey(date) !== value ? null : date;
+}
+
+function formatTime(minutes: number) {
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 }
 
 function formatFullLabel(date: Date) {
@@ -111,9 +128,12 @@ function assignLanes(items: Appointment[]) {
 function findConflicts(items: Appointment[]) {
   const conflicts = new Set<string>();
   for (const item of items) {
+    if (item.status === "Cancelada") continue;
     for (const other of items) {
       if (item.id === other.id) continue;
+      if (other.status === "Cancelada") continue;
       if (item.professionalId !== other.professionalId) continue;
+      if (item.dateOffset !== other.dateOffset) continue;
       const aStart = timeToMinutes(item.start);
       const aEnd = timeToMinutes(item.end);
       const bStart = timeToMinutes(other.start);
@@ -132,13 +152,14 @@ export function AgendaPage() {
   const [view, setView] = useState<ViewMode>("dia");
   const [selectedDate, setSelectedDate] = useState(() => startOfToday());
   const [rows, setRows] = useState<StoredAppointment[]>(appointmentSeed);
-  const [professional, setProfessional] = useState(ALL);
+  const [professionalId, setProfessionalId] = useState(ALL);
   const [unit, setUnit] = useState(ALL);
   const [type, setType] = useState(ALL);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [noticeTone, setNoticeTone] = useState<"success" | "error">("success");
 
   usePageEnter(pageRef, [
     { selector: "[data-calendar-panel]", from: { opacity: 0, y: 20 } },
@@ -149,28 +170,38 @@ export function AgendaPage() {
 
   const today = startOfToday();
   const selected = rows.find((row) => row.id === selectedId) ?? null;
-  const units = Array.from(new Set(rows.map((row) => row.unit)));
-  const hasFilters = professional !== ALL || unit !== ALL || type !== ALL;
+  const units = Array.from(new Set([...appointmentUnits, ...rows.map((row) => row.unit)]));
+  const professionalFilterValue = professionalId === ALL ? ALL : professionals.find((item) => item.id === professionalId)?.name ?? ALL;
+  const hasFilters = professionalId !== ALL || unit !== ALL || type !== ALL;
 
-  const filteredForDate = useMemo(() => {
+  const filteredAppointments = useMemo(() => {
     return rows.filter((row) => {
-      const rowDate = toDate(row.dateOffset);
-      const matchesDate = dateKey(rowDate) === dateKey(selectedDate);
-      const matchesProfessional = professional === ALL || row.professionalId === professional;
+      const matchesProfessional = professionalId === ALL || row.professionalId === professionalId;
       const matchesUnit = unit === ALL || row.unit === unit;
       const matchesType = type === ALL || row.type === type;
-      return matchesDate && matchesProfessional && matchesUnit && matchesType;
+      return matchesProfessional && matchesUnit && matchesType;
     });
-  }, [rows, selectedDate, professional, unit, type]);
+  }, [rows, professionalId, unit, type]);
+
+  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
+  const monthCells = useMemo(() => getMonthCells(selectedDate), [selectedDate]);
+  const visibleAppointments = useMemo(() => {
+    const visibleDates = view === "dia" ? [selectedDate] : view === "semana" ? weekDates : monthCells;
+    const visibleKeys = new Set(visibleDates.map(dateKey));
+    return filteredAppointments.filter((row) => visibleKeys.has(dateKey(toDate(row.dateOffset))));
+  }, [filteredAppointments, view, selectedDate, weekDates, monthCells]);
+
+  const conflicts = useMemo(() => findConflicts(rows), [rows]);
 
   const upcoming = useMemo(() => {
-    return rows
+    return filteredAppointments
       .filter((row) => row.status !== "Cancelada" && (row.dateOffset > 0 || (row.dateOffset === 0 && timeToMinutes(row.start) >= timeToMinutes("07:00"))))
       .sort((a, b) => a.dateOffset - b.dateOffset || timeToMinutes(a.start) - timeToMinutes(b.start))
       .slice(0, 9);
-  }, [rows]);
+  }, [filteredAppointments]);
 
-  function showNotice(message: string) {
+  function showNotice(message: string, tone: "success" | "error" = "success") {
+    setNoticeTone(tone);
     setNotice(message);
     window.setTimeout(() => setNotice(""), 3200);
   }
@@ -194,14 +225,14 @@ export function AgendaPage() {
   }
 
   function confirmSelected() {
-    if (!selected) return;
+    if (!selected || selected.status !== "Aguardando confirmação") return;
     patch(selected.id, { status: "Confirmada" });
     setSelectedId(null);
     showNotice(`Consulta de ${selected.patient} confirmada.`);
   }
 
   function cancelSelected() {
-    if (!selected) return;
+    if (!selected || selected.status === "Cancelada") return;
     patch(selected.id, { status: "Cancelada" });
     setSelectedId(null);
     showNotice(`Consulta de ${selected.patient} cancelada. Horário liberado.`);
@@ -211,49 +242,69 @@ export function AgendaPage() {
     event.preventDefault();
     if (!selected) return;
     const form = new FormData(event.currentTarget);
-    const dateValue = String(form.get("date"));
-    const timeValue = String(form.get("time"));
-    if (dateValue && timeValue) {
-      const target = new Date(`${dateValue}T00:00:00`);
-      const offset = Math.round((target.getTime() - today.getTime()) / 86_400_000);
-      const duration = timeToMinutes(selected.end) - timeToMinutes(selected.start);
-      const endTime = `${String(Math.floor((timeToMinutes(timeValue) + duration) / 60)).padStart(2, "0")}:${String((timeToMinutes(timeValue) + duration) % 60).padStart(2, "0")}`;
-      patch(selected.id, { dateOffset: offset, start: timeValue, end: endTime, status: "Aguardando confirmação" });
+    const dateValue = String(form.get("date") ?? "");
+    const timeValue = String(form.get("time") ?? "");
+    const target = parseDateInput(dateValue);
+    const duration = timeToMinutes(selected.end) - timeToMinutes(selected.start);
+    const startMin = timeToMinutes(timeValue);
+    const endMin = startMin + duration;
+    if (!target || !isValidTime(timeValue) || !Number.isInteger(duration) || duration <= 0 || startMin < DAY_START || endMin > DAY_END) {
+      showNotice("Informe uma data e um horário válidos dentro do funcionamento da unidade.", "error");
+      return;
     }
+    const offset = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+    const nextAppointment = { ...selected, dateOffset: offset, start: timeValue, end: formatTime(endMin), status: "Aguardando confirmação" as AppointmentStatus };
+    const hasConflict = findConflicts([...rows.filter((row) => row.id !== selected.id), nextAppointment]).has(selected.id);
+    patch(selected.id, { dateOffset: offset, start: timeValue, end: formatTime(endMin), status: "Aguardando confirmação" });
     setRescheduleOpen(false);
     setSelectedId(null);
-    showNotice(`Consulta de ${selected.patient} reagendada.`);
+    showNotice(hasConflict ? `Consulta de ${selected.patient} reagendada, mas há conflito de horário com o profissional.` : `Consulta de ${selected.patient} reagendada.`);
   }
 
   function createAppointment(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const dateValue = String(form.get("date"));
-    const start = String(form.get("start"));
-    const duration = Number(form.get("duration") ?? 30);
-    const target = new Date(`${dateValue}T00:00:00`);
+    const patient = String(form.get("patient") ?? "").trim();
+    const professionalValue = String(form.get("professional") ?? "");
+    const typeValue = String(form.get("type") ?? "");
+    const dateValue = String(form.get("date") ?? "");
+    const start = String(form.get("start") ?? "");
+    const durationValue = String(form.get("duration") ?? "");
+    const unitValue = String(form.get("unit") ?? "");
+    const duration = Number(durationValue);
+    const target = parseDateInput(dateValue);
+    if (!patient || !professionals.some((item) => item.id === professionalValue) || !target || !isValidTime(start) || !Number.isInteger(duration) || duration <= 0 || !appointmentTypes.includes(typeValue as AppointmentType) || !appointmentUnits.includes(unitValue as AppointmentUnit)) {
+      showNotice("Preencha paciente, profissional, data, horário, duração e unidade com valores válidos.", "error");
+      return;
+    }
     const offset = Math.round((target.getTime() - today.getTime()) / 86_400_000);
     const startMin = timeToMinutes(start);
-    const endTime = `${String(Math.floor((startMin + duration) / 60)).padStart(2, "0")}:${String((startMin + duration) % 60).padStart(2, "0")}`;
+    const endMin = startMin + duration;
+    if (startMin < DAY_START || endMin > DAY_END) {
+      showNotice("O horário deve ficar entre 07:00 e 19:00, respeitando a duração informada.", "error");
+      return;
+    }
+    const highestId = rows.reduce((highest, row) => Math.max(highest, Number(row.id.match(/(\d+)$/)?.[1] ?? 0)), 100);
     const next: StoredAppointment = {
-      id: `AG-${String(rows.length + 101)}`,
-      patient: String(form.get("patient")),
-      professionalId: String(form.get("professional")),
-      type: String(form.get("type")) as AppointmentType,
+      id: `AG-${String(highestId + 1).padStart(3, "0")}`,
+      patient,
+      professionalId: professionalValue,
+      type: typeValue as AppointmentType,
       dateOffset: offset,
       start,
-      end: endTime,
+      end: formatTime(endMin),
       status: "Aguardando confirmação",
-      unit: String(form.get("unit")) as AppointmentUnit
+      unit: unitValue as AppointmentUnit
     };
     persist([...rows, next]);
     setNewOpen(false);
     setSelectedDate(target);
-    showNotice(`Consulta de ${next.patient} criada para ${formatFullLabel(target)} às ${start}.`);
+    const hasConflict = findConflicts([...rows, next]).has(next.id);
+    showNotice(hasConflict ? `Consulta de ${next.patient} criada, mas há conflito de horário com o profissional.` : `Consulta de ${next.patient} criada para ${formatFullLabel(target)} às ${start}.`);
   }
 
   function clearFilters() {
-    setProfessional(ALL);
+    setProfessionalId(ALL);
     setUnit(ALL);
     setType(ALL);
   }
@@ -270,8 +321,8 @@ export function AgendaPage() {
       />
 
       {notice ? (
-        <div role="status" className="mb-4 flex items-center justify-between rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-4 py-3 text-sm font-bold text-clinical-green">
-          <span className="flex items-center gap-2"><Check className="size-4" />{notice}</span>
+        <div role="status" className={cn("mb-4 flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-bold", noticeTone === "error" ? "border-red-500/20 bg-red-500/[0.08] text-red-500" : "border-clinical-green/20 bg-clinical-green/[0.08] text-clinical-green")}>
+          <span className="flex items-center gap-2">{noticeTone === "error" ? <AlertTriangle className="size-4" /> : <Check className="size-4" />}{notice}</span>
           <button type="button" onClick={() => setNotice("")} aria-label="Fechar aviso"><X className="size-4" /></button>
         </div>
       ) : null}
@@ -287,24 +338,24 @@ export function AgendaPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <ViewSwitch views={[{ id: "dia", label: "Dia", icon: Clock3 }, { id: "semana", label: "Semana", icon: CalendarRange }, { id: "mes", label: "Mês", icon: CalendarDays }]} value={view} onChange={(id) => setView(id as ViewMode)} />
-              <Dropdown label="Profissional" value={professional} options={[ALL, ...professionals.map((professional) => professional.name)]} onChange={setProfessional} className="min-w-[170px]" />
+              <Dropdown label="Profissional" value={professionalFilterValue} options={[ALL, ...professionals.map((item) => item.name)]} onChange={(value) => setProfessionalId(value === ALL ? ALL : professionals.find((item) => item.name === value)?.id ?? ALL)} className="min-w-[170px]" />
               <Dropdown label="Unidade" value={unit} options={[ALL, ...units]} onChange={setUnit} className="min-w-[150px]" />
               <Dropdown label="Tipo" value={type} options={[ALL, ...appointmentTypes]} onChange={setType} className="min-w-[140px]" />
             </div>
           </div>
 
-          {hasFilters && filteredForDate.length === 0 ? (
+          {visibleAppointments.length === 0 ? (
             <div className="p-4">
-              <StatePanel icon={SearchX} title="Nenhuma consulta neste período" description="Ajuste os filtros ou navegue para outro dia da agenda." action={<Button size="sm" variant="secondary" onClick={clearFilters}>Limpar filtros</Button>} />
+              <StatePanel icon={SearchX} title="Nenhuma consulta neste período" description="Ajuste os filtros ou navegue para outro dia da agenda." action={hasFilters ? <Button type="button" size="sm" variant="secondary" onClick={clearFilters}>Limpar filtros</Button> : undefined} />
             </div>
           ) : (
             <div className="clinical-scrollbar overflow-x-auto">
               {view === "dia" ? (
-                <DayGrid items={filteredForDate} date={selectedDate} onSelect={setSelectedId} />
+                <DayGrid items={visibleAppointments} allItems={rows} date={selectedDate} onSelect={setSelectedId} />
               ) : view === "semana" ? (
-                <WeekGrid items={filteredForDate} week={getWeekDates(selectedDate)} onSelect={setSelectedId} />
+                <WeekGrid items={visibleAppointments} allItems={rows} week={weekDates} onSelect={setSelectedId} />
               ) : (
-                <MonthGrid month={selectedDate} rows={rows} onSelectDay={(date) => { setSelectedDate(date); setView("dia"); }} />
+                <MonthGrid month={selectedDate} rows={visibleAppointments} allRows={rows} onSelectDay={(date) => { setSelectedDate(date); setView("dia"); }} />
               )}
             </div>
           )}
@@ -325,7 +376,7 @@ export function AgendaPage() {
               <div className="space-y-1.5">
                 {upcoming.map((row) => {
                   const professionalInfo = professionals.find((item) => item.id === row.professionalId);
-                  const conflict = row.notes ? true : false;
+                  const conflict = conflicts.has(row.id);
                   return (
                     <button key={row.id} type="button" onClick={() => setSelectedId(row.id)} className="animate-list-in w-full rounded-2xl border border-transparent p-3 text-left transition hover:border-clinical-blue/20 hover:bg-clinical-blue/[0.05]">
                       <div className="flex items-start gap-3">
@@ -337,7 +388,7 @@ export function AgendaPage() {
                           </p>
                           <div className="mt-1.5 flex items-center gap-1.5">
                             <StatusChip label={statusStyle[row.status].label} tone={statusStyle[row.status].chip} />
-                            {conflict ? <span title={row.notes}><AlertTriangle className="size-3.5 text-clinical-orange" /></span> : null}
+                            {conflict ? <span title="Conflito de horário com outra consulta do mesmo profissional"><AlertTriangle className="size-3.5 text-clinical-orange" /></span> : null}
                           </div>
                         </div>
                         <span className="mt-0.5 shrink-0 text-[11px] font-bold text-clinical-muted">{formatFullLabel(toDate(row.dateOffset))}</span>
@@ -375,9 +426,9 @@ export function AgendaPage() {
                 </div>
               ) : null}
               <div className="mt-7 flex flex-wrap gap-2 border-t border-clinical-border/[0.12] pt-5">
-                {selected.status === "Aguardando confirmação" ? <Button onClick={confirmSelected}><Check className="size-4" />Confirmar consulta</Button> : null}
-                {selected.status !== "Cancelada" ? <Button variant="secondary" onClick={() => setRescheduleOpen(true)}><CalendarRange className="size-4" />Reagendar</Button> : null}
-                {selected.status !== "Cancelada" ? <Button variant="ghost" onClick={cancelSelected} className="text-red-500 hover:bg-red-500/10 hover:text-red-500"><X className="size-4" />Cancelar</Button> : null}
+                {selected.status === "Aguardando confirmação" ? <Button type="button" onClick={confirmSelected}><Check className="size-4" />Confirmar consulta</Button> : null}
+                {selected.status !== "Cancelada" ? <Button type="button" variant="secondary" onClick={() => setRescheduleOpen(true)}><CalendarRange className="size-4" />Reagendar</Button> : null}
+                {selected.status !== "Cancelada" ? <Button type="button" variant="ghost" onClick={cancelSelected} className="text-red-500 hover:bg-red-500/10 hover:text-red-500"><X className="size-4" />Cancelar</Button> : null}
               </div>
             </div>
           );
@@ -413,7 +464,7 @@ export function AgendaPage() {
       <Modal open={rescheduleOpen} onClose={() => setRescheduleOpen(false)} title="Reagendar consulta" eyebrow="Agenda" description={selected ? `${selected.patient} · ${selected.id}` : undefined} icon={CalendarRange} className="max-w-xl">
         <form onSubmit={reschedule} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <ModalField name="date" label="Nova data" icon={CalendarDays} type="date" required />
+            <ModalField name="date" label="Nova data" icon={CalendarDays} type="date" defaultValue={selected ? dateKey(toDate(selected.dateOffset)) : dateKey(today)} required />
             <ModalField name="time" label="Novo horário" icon={Clock3} type="time" defaultValue={selected?.start ?? "09:00"} required />
           </div>
           <div className="rounded-2xl border border-clinical-blue/15 bg-clinical-blue/[0.06] p-3 text-xs font-semibold leading-5 text-clinical-slate">O paciente será notificado da nova data e o status voltará para aguardando confirmação.</div>
@@ -465,8 +516,8 @@ function NowLine() {
   );
 }
 
-function DayGrid({ items, date, onSelect }: { items: Appointment[]; date: Date; onSelect: (id: string) => void }) {
-  const conflicts = findConflicts(items);
+function DayGrid({ items, allItems, date, onSelect }: { items: Appointment[]; allItems: Appointment[]; date: Date; onSelect: (id: string) => void }) {
+  const conflicts = findConflicts(allItems);
   const { lanes } = assignLanes(items);
   const height = (DAY_END - DAY_START) * PX_PER_MIN;
   const isToday = dateKey(date) === dateKey(startOfToday());
@@ -491,8 +542,9 @@ function DayGrid({ items, date, onSelect }: { items: Appointment[]; date: Date; 
   );
 }
 
-function WeekGrid({ items, week, onSelect }: { items: Appointment[]; week: Date[]; onSelect: (id: string) => void }) {
+function WeekGrid({ items, allItems, week, onSelect }: { items: Appointment[]; allItems: Appointment[]; week: Date[]; onSelect: (id: string) => void }) {
   const height = (DAY_END - DAY_START) * 0.85;
+  const conflicts = findConflicts(allItems);
   return (
     <div className="min-w-[900px]">
       <div className="grid grid-cols-7 border-b border-clinical-border/[0.12] bg-clinical-surfaceMuted/40">
@@ -506,7 +558,6 @@ function WeekGrid({ items, week, onSelect }: { items: Appointment[]; week: Date[
       <div className="grid grid-cols-7">
         {week.map((day) => {
           const dayItems = items.filter((row) => dateKey(toDate(row.dateOffset)) === dateKey(day));
-          const conflicts = findConflicts(dayItems);
           const { lanes } = assignLanes(dayItems);
           return (
             <div key={dateKey(day)} className="relative border-r border-clinical-border/[0.10] last:border-r-0" style={{ height }}>
@@ -574,9 +625,10 @@ function AppointmentBlock({ row, conflict, onSelect, compact }: { row: Appointme
   );
 }
 
-function MonthGrid({ month, rows, onSelectDay }: { month: Date; rows: Appointment[]; onSelectDay: (date: Date) => void }) {
+function MonthGrid({ month, rows, allRows, onSelectDay }: { month: Date; rows: Appointment[]; allRows: Appointment[]; onSelectDay: (date: Date) => void }) {
   const cells = getMonthCells(month);
   const today = startOfToday();
+  const conflicts = findConflicts(allRows);
   const byDay = useMemo(() => {
     const map = new Map<string, Appointment[]>();
     for (const row of rows) {
@@ -598,13 +650,14 @@ function MonthGrid({ month, rows, onSelectDay }: { month: Date; rows: Appointmen
         {cells.map((day) => {
           const key = dateKey(day);
           const dayRows = byDay.get(key) ?? [];
-          const inMonth = day.getMonth() === month.getMonth();
+          const inMonth = day.getFullYear() === month.getFullYear() && day.getMonth() === month.getMonth();
           const isToday = key === dateKey(today);
           const counts = {
             Confirmada: dayRows.filter((row) => row.status === "Confirmada").length,
             Aguardando: dayRows.filter((row) => row.status === "Aguardando confirmação" || row.status === "Encaixe").length,
             Cancelada: dayRows.filter((row) => row.status === "Cancelada").length
           };
+          const conflictCount = dayRows.filter((row) => conflicts.has(row.id)).length;
           return (
             <button
               key={key}
@@ -624,6 +677,7 @@ function MonthGrid({ month, rows, onSelectDay }: { month: Date; rows: Appointmen
                   {counts.Confirmada > 0 ? <DayDot tone="blue" label={`${counts.Confirmada} confirmada(s)`} /> : null}
                   {counts.Aguardando > 0 ? <DayDot tone="orange" label={`${counts.Aguardando} aguardando`} /> : null}
                   {counts.Cancelada > 0 ? <DayDot tone="neutral" label={`${counts.Cancelada} cancelada(s)`} /> : null}
+                  {conflictCount > 0 ? <DayDot tone="orange" label={`${conflictCount} conflito(s)`} /> : null}
                 </div>
               ) : (
                 <p className="mt-2 text-[11px] font-semibold text-clinical-muted/70">—</p>

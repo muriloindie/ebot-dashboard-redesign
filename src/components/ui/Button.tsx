@@ -5,7 +5,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: "sm" | "md";
 };
 
-export function Button({ className, variant = "primary", size = "md", ...props }: ButtonProps) {
+export function Button({ className, variant = "primary", size = "md", type = "button", ...props }: ButtonProps) {
   return (
     <button
       className={cn(
@@ -16,6 +16,7 @@ export function Button({ className, variant = "primary", size = "md", ...props }
         variant === "ghost" && "text-clinical-slate hover:bg-clinical-blue/10 hover:text-clinical-blue",
         className
       )}
+      type={type}
       {...props}
     />
   );

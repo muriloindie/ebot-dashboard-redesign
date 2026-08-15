@@ -39,8 +39,11 @@ export function SidebarItem({ item, activeItem, onSelect }: SidebarItemProps) {
 
   function handleClick() {
     if (disabled) return;
+    if (hasChildren) {
+      setOpen((current) => !current);
+      return;
+    }
     onSelect(item.id);
-    if (hasChildren) setOpen((current) => !current);
   }
 
   return (
@@ -66,7 +69,7 @@ export function SidebarItem({ item, activeItem, onSelect }: SidebarItemProps) {
       </button>
 
       {hasChildren ? (
-        <div ref={submenuRef} className="h-0 overflow-hidden opacity-0">
+        <div ref={submenuRef} className={cn("overflow-hidden", open ? "h-auto opacity-100" : "h-0 opacity-0")}>
           <div className="ml-5 mt-1.5 space-y-1 border-l border-clinical-blue/[0.12] pl-2.5">
             {item.children?.map((child) => (
               <SidebarSubItem key={child.id} item={child} active={activeItem === child.id} onSelect={onSelect} />

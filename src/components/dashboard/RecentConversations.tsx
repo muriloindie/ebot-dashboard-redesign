@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MessageCircle, Send, X } from "lucide-react";
 import { recentConversations } from "@/data/dashboardMock";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -10,6 +11,7 @@ type Conversation = (typeof recentConversations)[number];
 
 export function RecentConversations() {
   const [selected, setSelected] = useState<Conversation | null>(null);
+  const router = useRouter();
 
   return (
     <>
@@ -27,6 +29,7 @@ export function RecentConversations() {
           {recentConversations.map((conversation) => (
             <button
               key={`${conversation.patient}-${conversation.time}`}
+              type="button"
               onClick={() => setSelected(conversation)}
               className="grid w-full grid-cols-[44px_1fr] gap-3 rounded-[22px] border border-transparent bg-clinical-surface/55 p-3 text-left transition hover:-translate-y-0.5 hover:border-clinical-blue/20 hover:bg-clinical-surface focus:outline-none focus:ring-2 focus:ring-clinical-blue/25 sm:grid-cols-[44px_1fr_auto]"
             >
@@ -52,7 +55,7 @@ export function RecentConversations() {
             className="absolute bottom-0 right-0 top-auto w-full rounded-t-[32px] bg-clinical-surface p-6 shadow-2xl sm:top-0 sm:max-w-md sm:rounded-l-[32px] sm:rounded-tr-none"
             onClick={(event) => event.stopPropagation()}
           >
-            <button onClick={() => setSelected(null)} className="mb-6 flex size-10 items-center justify-center rounded-2xl bg-clinical-blue/10 text-clinical-blue transition hover:bg-clinical-blue hover:text-white">
+            <button type="button" onClick={() => setSelected(null)} aria-label="Fechar conversa" className="mb-6 flex size-10 items-center justify-center rounded-2xl bg-clinical-blue/10 text-clinical-blue transition hover:bg-clinical-blue hover:text-white">
               <X className="size-4" />
             </button>
             <div className="flex items-center gap-3">
@@ -63,11 +66,12 @@ export function RecentConversations() {
               </div>
             </div>
             <div className="mt-8 rounded-[24px] border border-clinical-border/[0.10] bg-clinical-surfaceMuted p-5">
-              <p className="text-sm font-extrabold text-clinical-dark">Prévia da conversa em desenvolvimento</p>
+              <p className="text-sm font-extrabold text-clinical-dark">Resumo da conversa</p>
               <p className="mt-2 text-sm leading-6 text-clinical-muted">
-                Este drawer já representa o comportamento de abertura. Na integração, ele receberá histórico, resumo da IA, anexos e ações de handoff.
+                A IA identificou <span className="font-extrabold text-clinical-blueText">{selected.summary}</span> e classificou este contato como <span className="font-extrabold text-clinical-blueText">{selected.status.toLowerCase()}</span>.
               </p>
             </div>
+            <button type="button" onClick={() => router.push("/atendimentos")} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-clinical-blue px-4 py-3 text-sm font-extrabold text-white transition hover:bg-clinical-blueHover">Abrir na central de atendimentos <Send className="size-4" /></button>
           </aside>
         </div>
       ) : null}

@@ -10,6 +10,7 @@
   --clinical-green: 135 166 48;
   --clinical-teal: 48 163 164;
   --clinical-orange: 241 157 24;
+  --clinical-red: 205 76 76;
   --clinical-whatsapp: 37 211 102;
   --clinical-dark: 38 53 50;
   --clinical-header: 47 56 53;
@@ -35,6 +36,7 @@
   --clinical-green: 158 188 71;
   --clinical-teal: 69 190 190;
   --clinical-orange: 247 177 64;
+  --clinical-red: 240 119 119;
   --clinical-whatsapp: 58 220 120;
   --clinical-dark: 246 250 252;
   --clinical-header: 246 250 252;
@@ -72,6 +74,26 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgb(var(--clinical-blue) / 0.75);
+  outline-offset: 2px;
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -20% 0; }
+}
+
+.clinical-skeleton {
+  background: linear-gradient(90deg, rgb(var(--clinical-surface-muted) / 0.7) 20%, rgb(var(--clinical-blue) / 0.10) 38%, rgb(var(--clinical-surface-muted) / 0.7) 56%);
+  background-size: 220% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
 
 ::selection {
@@ -119,6 +141,17 @@ textarea {
 .chat-dots {
   background-image: radial-gradient(circle, rgb(var(--clinical-charcoal) / 0.045) 1px, transparent 1px);
   background-size: 18px 18px;
+}
+
+.qr-editor:empty::before {
+  content: attr(data-placeholder);
+  color: rgb(var(--clinical-muted) / 1);
+  font-weight: 700;
+  font-size: 13px;
+  pointer-events: none;
+}
+.qr-editor:focus {
+  outline: none;
 }
 
 @keyframes pulse-ring {
@@ -208,6 +241,10 @@ textarea {
   }
 
   .animate-list-in {
+    animation: none;
+  }
+
+  .clinical-skeleton {
     animation: none;
   }
 }

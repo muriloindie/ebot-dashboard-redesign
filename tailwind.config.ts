@@ -14,6 +14,7 @@ const config: Config = {
           green: "rgb(var(--clinical-green) / <alpha-value>)",
           teal: "rgb(var(--clinical-teal) / <alpha-value>)",
           orange: "rgb(var(--clinical-orange) / <alpha-value>)",
+          red: "rgb(var(--clinical-red) / <alpha-value>)",
           whatsapp: "rgb(var(--clinical-whatsapp) / <alpha-value>)",
           dark: "rgb(var(--clinical-dark) / <alpha-value>)",
           header: "rgb(var(--clinical-header) / <alpha-value>)",

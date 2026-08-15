@@ -1,4 +1,7 @@
+"use client";
+
 import { AlertTriangle, ArrowRight, CalendarPlus, ClipboardList, Sparkles, Workflow } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { automationInsights } from "@/data/dashboardMock";
 import { GlassCard } from "@/components/ui/GlassCard";
 
@@ -10,6 +13,8 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export function AutomationInsights() {
+  const router = useRouter();
+  const routes: Record<string, string> = { "Criar automação": "/fluxos-automacao", "Ver conversas": "/atendimentos", "Enviar campanha": "/campanhas" };
   return (
     <GlassCard className="p-4 sm:p-5 lg:p-6">
       <div className="mb-5 flex items-start justify-between gap-4">
@@ -44,7 +49,7 @@ export function AutomationInsights() {
                 <span className="font-black text-clinical-blueText">{insight.highlight}</span>
                 {afterHighlight}
               </p>
-              <button className="relative mt-4 inline-flex items-center gap-2 rounded-2xl border border-clinical-blue/20 bg-clinical-blue px-4 py-2.5 text-[13px] font-extrabold text-white shadow-[0_12px_30px_rgba(58,157,202,0.20)] transition duration-300 hover:bg-clinical-blueHover hover:shadow-[0_16px_38px_rgba(58,157,202,0.24)] focus:outline-none focus:ring-2 focus:ring-clinical-blue/25">
+              <button type="button" onClick={() => router.push(routes[insight.action] ?? "/fluxos-automacao")} className="relative mt-4 inline-flex items-center gap-2 rounded-2xl border border-clinical-blue/20 bg-clinical-blue px-4 py-2.5 text-[13px] font-extrabold text-white shadow-[0_12px_30px_rgba(58,157,202,0.20)] transition duration-300 hover:bg-clinical-blueHover hover:shadow-[0_16px_38px_rgba(58,157,202,0.24)] focus:outline-none focus:ring-2 focus:ring-clinical-blue/25">
                 {insight.action} <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
               </button>
             </div>

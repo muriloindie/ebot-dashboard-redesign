@@ -20,19 +20,21 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-export function SmartFilters() {
-  const [filters, setFilters] = useState<Record<string, string>>({
-    period: "Hoje",
-    channel: "Todos",
-    status: "Todos",
-    unit: "Clínica Geral"
-  });
+export type DashboardFilters = {
+  period: string;
+  channel: string;
+  status: string;
+  unit: string;
+};
+
+export function SmartFilters({ filters, onChange }: { filters: DashboardFilters; onChange: (filters: DashboardFilters) => void }) {
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [dateModalOpen, setDateModalOpen] = useState(false);
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(6);
-  const [startDate, setStartDate] = useState<{ day: number; month: number; year: number } | null>({ day: 14, month: 6, year: 2026 });
-  const [endDate, setEndDate] = useState<{ day: number; month: number; year: number } | null>({ day: 14, month: 6, year: 2026 });
+  const today = new Date();
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [startDate, setStartDate] = useState<{ day: number; month: number; year: number } | null>({ day: today.getDate(), month: today.getMonth(), year: today.getFullYear() });
+  const [endDate, setEndDate] = useState<{ day: number; month: number; year: number } | null>({ day: today.getDate(), month: today.getMonth(), year: today.getFullYear() });
   const [selecting, setSelecting] = useState<"start" | "end">("start");
 
   const days = getDaysInMonth(currentYear, currentMonth);
@@ -89,6 +91,7 @@ export function SmartFilters() {
     <>
       <section className="glass-card rounded-[22px] p-3 lg:hidden">
         <button
+          type="button"
           onClick={() => setFiltersModalOpen(true)}
           className="flex w-full items-center justify-between gap-3 rounded-2xl px-1 text-left focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
         >
@@ -123,12 +126,13 @@ export function SmartFilters() {
                 label={group.label}
                 value={filters[group.key]}
                 options={[...group.options]}
-                onChange={(option) => setFilters((current) => ({ ...current, [group.key]: option }))}
+                onChange={(option) => onChange({ ...filters, [group.key]: option })}
               />
             ))}
           </div>
 
           <button
+            type="button"
             onClick={() => setDateModalOpen(true)}
             className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-dashed border-clinical-blue/25 bg-clinical-surface/60 px-4 text-[14px] font-extrabold text-clinical-blueText transition hover:bg-clinical-blue/10 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25 sm:w-auto lg:ml-auto"
           >
@@ -147,10 +151,11 @@ export function SmartFilters() {
               label={group.label}
               value={filters[group.key]}
               options={[...group.options]}
-              onChange={(option) => setFilters((current) => ({ ...current, [group.key]: option }))}
+              onChange={(option) => onChange({ ...filters, [group.key]: option })}
             />
           ))}
           <button
+            type="button"
             onClick={() => {
               setFiltersModalOpen(false);
               setDateModalOpen(true);
@@ -162,6 +167,7 @@ export function SmartFilters() {
           </button>
         </div>
         <button
+          type="button"
           onClick={() => setFiltersModalOpen(false)}
           className="mt-5 flex w-full items-center justify-center rounded-2xl bg-clinical-blue px-4 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(58,157,202,0.16)] transition hover:bg-clinical-blueHover focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
         >
@@ -172,6 +178,7 @@ export function SmartFilters() {
       <Modal open={dateModalOpen} onClose={() => setDateModalOpen(false)} title="Selecionar período" className="max-w-md">
         <div className="mb-4 flex items-center justify-between">
           <button
+            type="button"
             onClick={() => {
               if (currentMonth === 0) {
                 setCurrentMonth(11);
@@ -188,6 +195,7 @@ export function SmartFilters() {
             {MONTHS[currentMonth]} {currentYear}
           </p>
           <button
+            type="button"
             onClick={() => {
               if (currentMonth === 11) {
                 setCurrentMonth(0);
@@ -217,6 +225,7 @@ export function SmartFilters() {
             const { isStart, isEnd, inRange } = isSelected(day);
             return (
               <button
+                type="button"
                 key={day}
                 onClick={() => selectDate(day)}
                 className={cn(
@@ -244,6 +253,7 @@ export function SmartFilters() {
 
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => {
               setStartDate(null);
               setEndDate(null);
@@ -254,6 +264,7 @@ export function SmartFilters() {
             Limpar
           </button>
           <button
+            type="button"
             onClick={applyDates}
             className="flex-1 rounded-2xl bg-clinical-blue px-4 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-clinical-blueHover"
           >

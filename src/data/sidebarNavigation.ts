@@ -78,9 +78,9 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
       { id: "pacientes", label: "Pacientes", icon: UserRound, path: "/pacientes", enabled: true },
       { id: "contatos", label: "Contatos", icon: ContactRound, path: "/contatos", enabled: true },
       { id: "relacionamentos", label: "Relacionamentos", icon: Link2, path: "/relacionamentos", enabled: true },
-      { id: "tags", label: "Tags", icon: Tags, path: "/tags" },
+      { id: "tags", label: "Tags", icon: Tags, path: "/tags", enabled: true },
       { id: "protocolos", label: "Protocolos", icon: ClipboardList, path: "/protocolos", enabled: true },
-      { id: "arquivos", label: "Arquivos", icon: FileText, path: "/arquivos" }
+      { id: "arquivos", label: "Arquivos", icon: FileText, path: "/arquivos", enabled: true }
     ]
   },
   {
@@ -88,11 +88,11 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     label: "Automação",
     icon: Bot,
     items: [
-      { id: "templates", label: "Templates", icon: MessageSquareText, path: "/templates" },
-      { id: "respostas-rapidas", label: "Respostas rápidas", icon: Zap, path: "/respostas-rapidas" },
-      { id: "openai", label: "Open.AI", icon: Bot, path: "/openai" },
-      { id: "fluxos-atendimento", label: "Fluxos de atendimento", icon: Workflow, path: "/fluxos-atendimento" },
-      { id: "base-conhecimento", label: "Base de conhecimento", icon: BookOpen, path: "/base-conhecimento" }
+      { id: "templates", label: "Templates", icon: MessageSquareText, path: "/templates", enabled: true },
+      { id: "respostas-rapidas", label: "Respostas rápidas", icon: Zap, path: "/respostas-rapidas", enabled: true },
+      { id: "openai", label: "Open.AI", icon: Bot, path: "/openai", enabled: true },
+      { id: "fluxos-automacao", label: "Fluxos de automação", icon: Workflow, path: "/fluxos-automacao", enabled: true },
+      { id: "base-conhecimento", label: "Base de conhecimento", icon: BookOpen, path: "/base-conhecimento", enabled: true }
     ]
   },
   {
@@ -101,17 +101,18 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     icon: MessageCircle,
     badge: "8",
     items: [
-      { id: "canais", label: "Canais", icon: RadioTower, path: "/canais" },
+      { id: "canais", label: "Canais", icon: RadioTower, path: "/canais", enabled: true },
       { id: "chat-interno", label: "Chat interno", icon: MessagesSquare, path: "/chat-interno", enabled: true },
       {
         id: "campanhas",
         label: "Campanhas",
         icon: Megaphone,
         path: "/campanhas",
+        enabled: true,
         children: [
-          { id: "campanhas-listagem", label: "Listagem", icon: Megaphone, path: "/campanhas" },
-          { id: "campanhas-listas", label: "Listas de contatos", icon: UsersRound, path: "/campanhas/listas" },
-          { id: "campanhas-configuracoes", label: "Configurações", icon: Settings, path: "/campanhas/configuracoes" }
+          { id: "campanhas-listagem", label: "Listagem", icon: Megaphone, path: "/campanhas", enabled: true },
+          { id: "campanhas-listas", label: "Listas de contatos", icon: UsersRound, path: "/campanhas/listas", enabled: true },
+          { id: "campanhas-configuracoes", label: "Configurações", icon: Settings, path: "/campanhas/configuracoes", enabled: true }
         ]
       }
     ]
@@ -121,10 +122,10 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     label: "Clínica",
     icon: Building2,
     items: [
-      { id: "setores", label: "Setores", icon: GitBranch, path: "/setores" },
-      { id: "filas", label: "Filas", icon: ListOrdered, path: "/filas" },
-      { id: "usuarios", label: "Usuários", icon: UserRound, path: "/usuarios" },
-      { id: "permissoes", label: "Permissões", icon: ShieldCheck, path: "/permissoes" }
+      { id: "setores", label: "Setores", icon: GitBranch, path: "/setores", enabled: true },
+      { id: "filas", label: "Filas", icon: ListOrdered, path: "/filas", enabled: true },
+      { id: "usuarios", label: "Usuários", icon: UserRound, path: "/usuarios", enabled: true },
+      { id: "permissoes", label: "Permissões", icon: ShieldCheck, path: "/permissoes", enabled: true }
     ]
   },
   {
@@ -132,11 +133,11 @@ export const sidebarNavigation: SidebarGroupConfig[] = [
     label: "Sistema",
     icon: Settings2,
     items: [
-      { id: "integracoes", label: "Integrações", icon: Plug, path: "/integracoes" },
-      { id: "api", label: "API", icon: Code2, path: "/api" },
-      { id: "financeiro", label: "Financeiro", icon: WalletCards, path: "/financeiro" },
-      { id: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes" },
-      { id: "ajuda", label: "Ajuda", icon: CircleHelp, path: "/ajuda" }
+      { id: "integracoes", label: "Integrações", icon: Plug, path: "/integracoes", enabled: true },
+      { id: "api", label: "API", icon: Code2, path: "/api", enabled: true },
+      { id: "financeiro", label: "Financeiro", icon: WalletCards, path: "/financeiro", enabled: true },
+      { id: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes", enabled: true },
+      { id: "ajuda", label: "Ajuda", icon: CircleHelp, path: "/ajuda", enabled: true }
     ]
   }
 ];

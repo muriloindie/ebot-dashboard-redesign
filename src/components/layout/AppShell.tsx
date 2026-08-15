@@ -7,8 +7,7 @@ import { Sparkles } from "lucide-react";
 import { sidebarNavigation, type MenuItemId } from "@/data/sidebarNavigation";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
-
-const clinics = ["Clínica São Lucas", "Clínica Santa Maria", "Centro Médico Norte"];
+import { useDemo } from "@/components/state/DemoProvider";
 
 function getMenuItemId(pathname: string) {
   const items = sidebarNavigation.flatMap((group) => group.items.flatMap((item) => [item, ...(item.children ?? [])]));
@@ -22,9 +21,9 @@ function getItemById(itemId: string) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { clinic, clinics, setClinic } = useDemo();
   const activeItem = getMenuItemId(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [clinic, setClinic] = useState(clinics[0]);
   const curtainRef = useRef<HTMLDivElement>(null);
   const firstLoad = useRef(true);
 

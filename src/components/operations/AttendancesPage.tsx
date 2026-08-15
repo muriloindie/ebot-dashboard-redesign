@@ -32,6 +32,7 @@ import {
   attendances,
   attendanceIndicators,
   attendanceChannels,
+  attendanceResponsibles,
   attendanceUnits,
   type Attendance,
   type AttendanceMessage,
@@ -57,6 +58,7 @@ import { AiSuggestion, QuickReplies } from "@/components/operations/QuickReplies
 import { cn } from "@/lib/cn";
 
 type StoredMessage = ComposerMessage & { id: string; from: AttendanceMessage["from"]; time: string };
+type StoredAttendance = Attendance & { dateOffset?: number; notes?: string[] };
 type ViewMode = "lista" | "cards";
 
 const CACHE_MESSAGES = "ebot-week2-attendance-messages";
@@ -79,20 +81,31 @@ const indicators: StatItem[] = [
   { id: "sla", label: "SLA de resposta", value: attendanceIndicators.sla, hint: "meta 90%", tone: "green", icon: Flag }
 ];
 
-function getInitialMessages() {
+function getInitialMessages(source: StoredAttendance[] = attendances) {
   return Object.fromEntries(
-    attendances.map((attendance) => [
+    source.map((attendance) => [
       attendance.id,
       attendance.messages.map((message) => ({ id: message.id, kind: "text" as const, text: message.text, from: message.from, time: message.time }))
     ])
   ) as Record<string, StoredMessage[]>;
 }
 
+function attendanceDateOffset(attendance: StoredAttendance) {
+  return typeof attendance.dateOffset === "number" ? attendance.dateOffset : 0;
+}
+
+function messagePreview(message: ComposerMessage) {
+  if (message.kind === "text") return message.text?.trim() || "Mensagem enviada.";
+  if (message.kind === "image") return `Imagem${message.fileName ? `: ${message.fileName}` : " enviada."}`;
+  if (message.kind === "document") return `Documento${message.fileName ? `: ${message.fileName}` : " enviado."}`;
+  return "Mensagem de áudio enviada.";
+}
+
 export function AttendancesPage() {
   const router = useRouter();
   const pageRef = useRef<HTMLDivElement>(null);
 
-  const [rows, setRows] = useState<Attendance[]>(attendances);
+  const [rows, setRows] = useState<StoredAttendance[]>(attendances);
   const [messages, setMessages] = useState<Record<string, StoredMessage[]>>({});
   const [selectedId, setSelectedId] = useState(attendances[0].id);
   const [view, setView] = useState<ViewMode>("lista");
@@ -113,6 +126,8 @@ export function AttendancesPage() {
   const [noteOpen, setNoteOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const rowsRef = useRef<StoredAttendance[]>(attendances);
+  const messagesRef = useRef<Record<string, StoredMessage[]>>({});
 
   usePageEnter(pageRef, [
     { selector: "[data-stat-card]", from: { opacity: 0, y: 18 } },
@@ -122,12 +137,20 @@ export function AttendancesPage() {
   ], { stagger: 0.05, delay: 0.05 });
 
   useEffect(() => {
-    setRows(readLocalCache(CACHE_ROWS, attendances));
-    setMessages(readLocalCache(CACHE_MESSAGES, getInitialMessages()));
+    const cachedRows = readLocalCache<StoredAttendance[]>(CACHE_ROWS, attendances);
+    const seededMessages = getInitialMessages(cachedRows);
+    const cachedMessages = readLocalCache<Record<string, StoredMessage[]>>(CACHE_MESSAGES, {});
+    const nextMessages = Object.fromEntries(
+      cachedRows.map((attendance) => [attendance.id, cachedMessages[attendance.id] ?? seededMessages[attendance.id] ?? []])
+    ) as Record<string, StoredMessage[]>;
+    rowsRef.current = cachedRows;
+    messagesRef.current = nextMessages;
+    setRows(cachedRows);
+    setMessages(nextMessages);
   }, []);
 
   const selected = rows.find((attendance) => attendance.id === selectedId) ?? rows[0];
-  const responsibles = useMemo(() => ["Todos", ...Array.from(new Set(rows.map((row) => row.responsible)))], [rows]);
+  const responsibles = useMemo(() => [ALL, ...Array.from(new Set([...attendanceResponsibles, ...rows.map((row) => row.responsible)]))], [rows]);
   const periods = ["Hoje", "Ontem", "Últimos 7 dias"];
   const statusOptions = ["Todos", "Aguardando", "Em atendimento humano", "Resolvido pela IA", "Encerrado"];
   const priorityOptions = ["Todos", "Alta", "Média", "Baixa"];
@@ -143,7 +166,8 @@ export function AttendancesPage() {
       const matchesResponsible = responsible === ALL || attendance.responsible === responsible;
       const matchesPriority = priority === ALL || attendance.priority === priority;
       const matchesUnit = unit === ALL || attendance.unit === unit;
-      const matchesPeriod = period === "Hoje";
+      const offset = attendanceDateOffset(attendance);
+      const matchesPeriod = period === "Hoje" ? offset === 0 : period === "Ontem" ? offset === -1 : offset >= -6 && offset <= 0;
       return matchesSearch && matchesChannel && matchesStatus && matchesResponsible && matchesPriority && matchesUnit && matchesPeriod;
     });
   }, [rows, messages, search, channel, status, responsible, priority, unit, period]);
@@ -162,36 +186,47 @@ export function AttendancesPage() {
     window.setTimeout(() => setNotice(""), 3200);
   }
 
-  function persistRows(next: Attendance[]) {
+  function persistRows(next: StoredAttendance[]) {
+    rowsRef.current = next;
     setRows(next);
     writeLocalCache(CACHE_ROWS, next);
   }
 
-  function patchAttendance(id: string, patch: Partial<Attendance>, extraMessage?: AttendanceMessage) {
-    const next = rows.map((row) => {
-      if (row.id !== id) return row;
-      const messagesNext = extraMessage ? [...(messages[id] ?? []), { id: extraMessage.id, kind: "text" as const, text: extraMessage.text, from: extraMessage.from, time: extraMessage.time }] : messages[id];
-      if (extraMessage) setMessages((current) => ({ ...current, [id]: messagesNext }));
-      return { ...row, ...patch };
-    });
-    persistRows(next);
-  }
-
   function persistMessage(id: string, message: StoredMessage) {
-    const nextMessages = { ...messages, [id]: [...(messages[id] ?? []), message] };
+    const nextMessages = { ...messagesRef.current, [id]: [...(messagesRef.current[id] ?? []), message] };
+    messagesRef.current = nextMessages;
     setMessages(nextMessages);
     writeLocalCache(CACHE_MESSAGES, nextMessages);
+
+    const currentRow = rowsRef.current.find((row) => row.id === id);
+    if (!currentRow) return;
+    const unread = message.from === "patient" ? currentRow.unread + 1 : 0;
+    persistRows(rowsRef.current.map((row) => row.id === id ? { ...row, lastMessage: messagePreview(message), time: message.time, unread } : row));
+  }
+
+  function patchAttendance(id: string, patch: Partial<StoredAttendance>, extraMessage?: AttendanceMessage) {
+    persistRows(rowsRef.current.map((row) => row.id === id ? { ...row, ...patch } : row));
+    if (extraMessage) {
+      persistMessage(id, { id: extraMessage.id, kind: "text", text: extraMessage.text, from: extraMessage.from, time: extraMessage.time });
+    }
   }
 
   function sendMessage(message: ComposerMessage) {
     if (!selected) return;
+    if (selected.status === "Encerrado") {
+      showNotice("Reabra o atendimento para enviar uma mensagem.");
+      return;
+    }
     persistMessage(selected.id, { ...message, id: `${selected.id}-${Date.now()}`, from: "me", time: "agora" });
     if (selected.source !== "Humano") {
+      const attendanceId = selected.id;
       window.setTimeout(() => {
-        persistMessage(selected.id, {
+        const current = rowsRef.current.find((row) => row.id === attendanceId);
+        if (!current || current.status === "Encerrado") return;
+        persistMessage(attendanceId, {
           kind: "text",
           text: "Recebi sua mensagem. Vou confirmar com a equipe e retorno em instantes.",
-          id: `${selected.id}-ai-${Date.now()}`,
+          id: `${attendanceId}-ai-${Date.now()}`,
           from: "ai",
           time: "agora"
         });
@@ -200,7 +235,7 @@ export function AttendancesPage() {
   }
 
   function assumeAttendance() {
-    if (!selected) return;
+    if (!selected || selected.status === "Encerrado") return;
     patchAttendance(
       selected.id,
       { status: "Em atendimento humano", responsible: "Marina Costa", source: "Humano" },
@@ -209,9 +244,14 @@ export function AttendancesPage() {
     showNotice(`Atendimento ${selected.id} assumido por Marina Costa.`);
   }
 
-  function transferAttendance() {
-    if (!selected) return;
-    const target = selected.responsible === "Marina Costa" ? "Julia Alves" : "Marina Costa";
+  function transferAttendance(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected || selected.status === "Encerrado") return;
+    const target = String(new FormData(event.currentTarget).get("responsible") ?? "").trim();
+    if (!target || target === selected.responsible) {
+      showNotice("Escolha um responsável diferente do atual.");
+      return;
+    }
     patchAttendance(
       selected.id,
       { responsible: target, source: "IA + humano" },
@@ -222,14 +262,38 @@ export function AttendancesPage() {
   }
 
   function closeAttendance() {
-    if (!selected) return;
-    patchAttendance(selected.id, { status: "Encerrado" });
+    if (!selected || selected.status === "Encerrado") return;
+    patchAttendance(selected.id, { status: "Encerrado" }, {
+      id: `sys-${Date.now()}`,
+      from: "human",
+      text: "Atendimento encerrado pela equipe. O histórico permanece disponível para consulta.",
+      time: "agora"
+    });
     setCloseOpen(false);
     showNotice(`Atendimento ${selected.id} encerrado.`);
   }
 
+  function reopenAttendance() {
+    if (!selected || selected.status !== "Encerrado") return;
+    const nextStatus = selected.source === "Humano" || selected.source === "IA + humano" ? "Em atendimento humano" : "Aguardando";
+    patchAttendance(selected.id, { status: nextStatus }, {
+      id: `sys-${Date.now()}`,
+      from: "human",
+      text: `Atendimento reaberto pela equipe e movido para ${nextStatus === "Aguardando" ? "a fila de atendimento" : "o atendimento humano"}.`,
+      time: "agora"
+    });
+    showNotice(`Atendimento ${selected.id} reaberto.`);
+  }
+
   function addNote(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!selected) return;
+    const note = String(new FormData(event.currentTarget).get("note") ?? "").trim();
+    if (!note) {
+      showNotice("Escreva uma observação antes de registrar.");
+      return;
+    }
+    persistRows(rowsRef.current.map((row) => row.id === selected.id ? { ...row, notes: [...(row.notes ?? []), note] } : row));
     setNoteOpen(false);
     showNotice("Observação registrada no histórico do atendimento.");
   }
@@ -237,11 +301,21 @@ export function AttendancesPage() {
   function createAttendance(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const name = String(form.get("name") ?? "");
-    const next: Attendance = {
-      id: `AT-${String(rows.length + 1101)}`,
+    const name = String(form.get("name") ?? "").trim();
+    const phone = String(form.get("phone") ?? "").trim();
+    if (!name || !phone) {
+      showNotice("Informe o nome e o telefone do paciente.");
+      return;
+    }
+    const highestId = rowsRef.current.reduce((highest, row) => {
+      const value = Number(row.id.match(/(\d+)$/)?.[1] ?? 0);
+      return Math.max(highest, value);
+    }, 1100);
+    const initialMessage: AttendanceMessage = { id: `init-${Date.now()}`, from: "human", text: "Atendimento criado pela central. A IA assumirá o primeiro contato.", time: "agora" };
+    const next: StoredAttendance = {
+      id: `AT-${String(highestId + 1)}`,
       patientName: name,
-      phone: String(form.get("phone") ?? ""),
+      phone,
       channel: String(form.get("channel") ?? "WhatsApp") as Attendance["channel"],
       status: "Aguardando",
       priority: String(form.get("priority") ?? "Média") as Attendance["priority"],
@@ -255,13 +329,30 @@ export function AttendancesPage() {
       unread: 0,
       startedAt: "agora",
       duration: "0 min",
-      messages: [{ id: `init-${Date.now()}`, from: "human", text: "Atendimento criado pela central. A IA assumirá o primeiro contato.", time: "agora" }]
+      dateOffset: 0,
+      notes: [],
+      messages: [initialMessage]
     };
-    const nextRows = [next, ...rows];
+    const nextRows = [next, ...rowsRef.current];
     persistRows(nextRows);
+    persistMessage(next.id, { ...initialMessage, kind: "text" });
     setSelectedId(next.id);
+    setMobileChat(true);
     setNewOpen(false);
     showNotice(`Atendimento criado para ${name}.`);
+  }
+
+  function selectAttendance(id: string) {
+    setSelectedId(id);
+    setMobileChat(true);
+    const row = rowsRef.current.find((attendance) => attendance.id === id);
+    if (row?.unread) persistRows(rowsRef.current.map((attendance) => attendance.id === id ? { ...attendance, unread: 0 } : attendance));
+  }
+
+  function markSelectedUnread() {
+    if (!selected) return;
+    persistRows(rowsRef.current.map((row) => row.id === selected.id ? { ...row, unread: Math.max(1, row.unread) } : row));
+    showNotice(`Atendimento ${selected.id} marcado como não lido.`);
   }
 
   function clearFilters() {
@@ -349,13 +440,13 @@ export function AttendancesPage() {
               {view === "lista" ? (
                 <div className="space-y-1">
                   {sorted.map((attendance) => (
-                    <AttendanceRow key={attendance.id} attendance={attendance} active={attendance.id === selected?.id} onSelect={() => { setSelectedId(attendance.id); setMobileChat(true); }} />
+                    <AttendanceRow key={attendance.id} attendance={attendance} active={attendance.id === selected?.id} onSelect={() => selectAttendance(attendance.id)} />
                   ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                   {sorted.map((attendance) => (
-                    <AttendanceCard key={attendance.id} attendance={attendance} active={attendance.id === selected?.id} onSelect={() => { setSelectedId(attendance.id); setMobileChat(true); }} />
+                    <AttendanceCard key={attendance.id} attendance={attendance} active={attendance.id === selected?.id} onSelect={() => selectAttendance(attendance.id)} />
                   ))}
                 </div>
               )}
@@ -375,6 +466,14 @@ export function AttendancesPage() {
               onAssume={assumeAttendance}
               onTransfer={() => setTransferOpen(true)}
               onClose={() => setCloseOpen(true)}
+              onReopen={reopenAttendance}
+              onPhone={() => showNotice(`Ligação local preparada para ${selected?.patientName ?? "o paciente"}.`)}
+              onVideo={() => showNotice(`Videochamada local preparada para ${selected?.patientName ?? "o paciente"}.`)}
+              onMenuAction={(action) => {
+                if (action === "unread") markSelectedUnread();
+                if (action === "profile") setProfileDrawerOpen(true);
+                if (action === "id") showNotice(`Identificação do atendimento: ${selected?.id ?? "indisponível"}.`);
+              }}
               onOpenProfile={() => setProfileDrawerOpen(true)}
               quickOpen={quickOpen}
               setQuickOpen={setQuickOpen}
@@ -418,16 +517,18 @@ export function AttendancesPage() {
       </Modal>
 
       <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transferir atendimento" eyebrow="Central de atendimento" description={selected ? `Transferir ${selected.id} para outro responsável.` : undefined} icon={UserRoundCheck} className="max-w-xl">
-        <div className="space-y-4">
-          <ModalSelect label="Responsável" icon={UserRoundCheck} defaultValue={selected?.responsible === "Marina Costa" ? "Julia Alves" : "Marina Costa"}>
-            <option>Marina Costa</option><option>Julia Alves</option><option>Dr. Ruan</option><option>Dra. Fernanda Rocha</option>
+        <form onSubmit={transferAttendance} className="space-y-4">
+          <ModalSelect name="responsible" label="Responsável" icon={UserRoundCheck} defaultValue={selected?.responsible === "Marina Costa" ? "Julia Alves" : "Marina Costa"}>
+            {Array.from(new Set([...attendanceResponsibles.filter((responsible) => responsible !== "IA" && responsible !== "IA + humano"), ...rows.map((row) => row.responsible)]))
+              .filter((responsible) => responsible !== "IA" && responsible !== "IA + humano" && responsible !== selected?.responsible)
+              .map((responsible) => <option key={responsible}>{responsible}</option>)}
           </ModalSelect>
           <div className="rounded-2xl border border-clinical-blue/15 bg-clinical-blue/[0.06] p-3 text-xs font-semibold leading-5 text-clinical-slate">O paciente será informado sobre a transferência e o histórico completo acompanha a conversa.</div>
           <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
             <Button type="button" variant="ghost" onClick={() => setTransferOpen(false)}>Cancelar</Button>
-            <Button onClick={transferAttendance}><Send className="size-4" />Transferir</Button>
+            <Button type="submit"><Send className="size-4" />Transferir</Button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       <Modal open={closeOpen} onClose={() => setCloseOpen(false)} title="Encerrar atendimento" eyebrow="Central de atendimento" description={selected ? `Encerrar o atendimento ${selected.id} de ${selected.patientName}?` : undefined} icon={Check} className="max-w-xl">
@@ -435,7 +536,7 @@ export function AttendancesPage() {
           <div className="rounded-2xl border border-clinical-orange/20 bg-clinical-orange/[0.07] p-3 text-xs font-semibold leading-5 text-clinical-slate">O atendimento sairá da fila ativa e o histórico continuará disponível no perfil do paciente.</div>
           <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
             <Button type="button" variant="ghost" onClick={() => setCloseOpen(false)}>Cancelar</Button>
-            <Button onClick={closeAttendance}><Check className="size-4" />Encerrar atendimento</Button>
+            <Button type="button" onClick={closeAttendance}><Check className="size-4" />Encerrar atendimento</Button>
           </div>
         </div>
       </Modal>
@@ -550,6 +651,10 @@ function ChatPane({
   onAssume,
   onTransfer,
   onClose,
+  onReopen,
+  onPhone,
+  onVideo,
+  onMenuAction,
   onOpenProfile,
   quickOpen,
   setQuickOpen
@@ -560,12 +665,17 @@ function ChatPane({
   onAssume: () => void;
   onTransfer: () => void;
   onClose: () => void;
+  onReopen: () => void;
+  onPhone: () => void;
+  onVideo: () => void;
+  onMenuAction: (action: "unread" | "profile" | "id") => void;
   onOpenProfile: () => void;
   quickOpen: boolean;
   setQuickOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [typing, setTyping] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -578,10 +688,12 @@ function ChatPane({
 
   const lastPatient = [...messages].reverse().find((message) => message.from === "patient");
   const lastReply = messages[messages.length - 1];
-  const showSuggestion = Boolean(lastPatient && lastReply && lastReply.from !== "patient");
+  const closed = attendance.status === "Encerrado";
+  const showSuggestion = !closed && Boolean(lastPatient && lastReply && lastReply.from !== "patient");
   const online = attendance.status === "Em atendimento humano" || attendance.status === "Resolvido pela IA";
 
   function handleSend(message: ComposerMessage) {
+    if (closed) return;
     onSend(message);
     if (attendance.source !== "Humano") setTyping(true);
   }
@@ -604,16 +716,27 @@ function ChatPane({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button type="button" className="hidden size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue sm:flex" aria-label="Ligar para o paciente"><Phone className="size-4" /></button>
-          <button type="button" className="hidden size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue sm:flex" aria-label="Iniciar videochamada"><Video className="size-4" /></button>
-          <button type="button" className="flex size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue" aria-label="Mais opções"><MoreVertical className="size-4" /></button>
-          {attendance.source !== "Humano" ? (
-            <Button size="sm" onClick={onAssume}><UserRoundCheck className="size-4" />Assumir</Button>
+          <button type="button" onClick={onPhone} disabled={closed} className="hidden size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-40 sm:flex" aria-label="Ligar para o paciente" title={closed ? "Ação indisponível em atendimento encerrado" : "Ligar para o paciente"}><Phone className="size-4" /></button>
+          <button type="button" onClick={onVideo} disabled={closed} className="hidden size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-40 sm:flex" aria-label="Iniciar videochamada" title={closed ? "Ação indisponível em atendimento encerrado" : "Iniciar videochamada"}><Video className="size-4" /></button>
+          <div className="relative">
+            <button type="button" onClick={() => setMenuOpen((current) => !current)} aria-expanded={menuOpen} aria-haspopup="menu" className="flex size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue" aria-label="Mais opções"><MoreVertical className="size-4" /></button>
+            {menuOpen ? (
+              <div role="menu" className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface p-2 shadow-clinical">
+                <button type="button" role="menuitem" onClick={() => { onMenuAction("unread"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-slate transition hover:bg-clinical-blue/[0.08] hover:text-clinical-blue">Marcar como não lido</button>
+                <button type="button" role="menuitem" onClick={() => { onMenuAction("profile"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-slate transition hover:bg-clinical-blue/[0.08] hover:text-clinical-blue">Abrir perfil do paciente</button>
+                <button type="button" role="menuitem" onClick={() => { onMenuAction("id"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-slate transition hover:bg-clinical-blue/[0.08] hover:text-clinical-blue">Ver identificação do atendimento</button>
+              </div>
+            ) : null}
+          </div>
+          {closed ? (
+            <Button type="button" size="sm" onClick={onReopen}><UserRoundCheck className="size-4" />Reabrir</Button>
+          ) : attendance.source !== "Humano" ? (
+            <Button type="button" size="sm" onClick={onAssume}><UserRoundCheck className="size-4" />Assumir</Button>
           ) : null}
-          <button type="button" onClick={onTransfer} className="flex size-9 items-center justify-center rounded-xl border border-clinical-border/[0.12] text-clinical-muted transition hover:border-clinical-blue/25 hover:text-clinical-blue" aria-label="Transferir atendimento">
+          <button type="button" onClick={onTransfer} disabled={closed} className="flex size-9 items-center justify-center rounded-xl border border-clinical-border/[0.12] text-clinical-muted transition hover:border-clinical-blue/25 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-40" aria-label="Transferir atendimento" title={closed ? "Ação indisponível em atendimento encerrado" : "Transferir atendimento"}>
             <Send className="size-4" />
           </button>
-          <button type="button" onClick={onClose} className="flex size-9 items-center justify-center rounded-xl border border-clinical-border/[0.12] text-clinical-muted transition hover:border-red-500/40 hover:text-red-500" aria-label="Encerrar atendimento">
+          <button type="button" onClick={onClose} disabled={closed} className="flex size-9 items-center justify-center rounded-xl border border-clinical-border/[0.12] text-clinical-muted transition hover:border-red-500/40 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Encerrar atendimento" title={closed ? "Atendimento já encerrado" : "Encerrar atendimento"}>
             <Check className="size-4" />
           </button>
         </div>
@@ -644,21 +767,30 @@ function ChatPane({
         ) : null}
       </div>
 
-      <div className="relative border-t border-clinical-border/[0.12]">
-        <QuickReplies open={quickOpen} onPick={(text) => { handleSend({ kind: "text", text }); setQuickOpen(false); }} />
-        <div className="flex items-center gap-2 px-3 pt-2.5">
-          <button
-            type="button"
-            aria-label="Respostas rápidas"
-            aria-expanded={quickOpen}
-            onClick={() => setQuickOpen((current) => !current)}
-            className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border transition", quickOpen ? "border-clinical-orange/30 bg-clinical-orange/10 text-clinical-orange" : "border-clinical-border/[0.12] text-clinical-muted hover:border-clinical-blue/25 hover:text-clinical-blue")}
-          >
-            <MessageSquareText className="size-4" />
-          </button>
-          <ChatComposer onSend={handleSend} />
-        </div>
-      </div>
+       <div className="relative border-t border-clinical-border/[0.12]">
+         {closed ? (
+           <div className="flex items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-clinical-muted">
+             <span>Este atendimento está encerrado e não aceita novas mensagens.</span>
+             <Button type="button" size="sm" variant="secondary" onClick={onReopen}>Reabrir atendimento</Button>
+           </div>
+         ) : (
+           <>
+             <QuickReplies open={quickOpen} onPick={(text) => { handleSend({ kind: "text", text }); setQuickOpen(false); }} />
+             <div className="flex items-center gap-2 px-3 pt-2.5">
+               <button
+                 type="button"
+                 aria-label="Respostas rápidas"
+                 aria-expanded={quickOpen}
+                 onClick={() => setQuickOpen((current) => !current)}
+                 className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border transition", quickOpen ? "border-clinical-orange/30 bg-clinical-orange/10 text-clinical-orange" : "border-clinical-border/[0.12] text-clinical-muted hover:border-clinical-blue/25 hover:text-clinical-blue")}
+               >
+                 <MessageSquareText className="size-4" />
+               </button>
+               <ChatComposer onSend={handleSend} />
+             </div>
+           </>
+         )}
+       </div>
     </>
   );
 }
@@ -716,7 +848,7 @@ function TypingBubble() {
   );
 }
 
-function PatientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendance: Attendance; onOpenProfile: () => void; onAddNote: () => void }) {
+function PatientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendance: StoredAttendance; onOpenProfile: () => void; onAddNote: () => void }) {
   return (
     <div className="clinical-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
       <div className="flex flex-col items-center rounded-2xl bg-clinical-blue/[0.07] p-4 text-center">
@@ -727,7 +859,7 @@ function PatientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendan
           <StatusChip label={attendance.status} tone={statusTone[attendance.status]} />
           <PriorityBadge priority={attendance.priority} withChip />
         </div>
-        <Button size="sm" variant="secondary" className="mt-4" onClick={onOpenProfile}>
+        <Button type="button" size="sm" variant="secondary" className="mt-4" onClick={onOpenProfile}>
           <UserRoundCheck className="size-4" />Ver paciente
         </Button>
       </div>
@@ -746,9 +878,16 @@ function PatientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendan
             <StickyNote className="size-3.5" />Adicionar
           </button>
         </div>
-        <p className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3 text-[13px] leading-5 text-clinical-slate">
-          Paciente recorrente da clínica. Prefere contato pelo WhatsApp e horários pela manhã.
-        </p>
+        <div className="space-y-2">
+          <p className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3 text-[13px] leading-5 text-clinical-slate">
+            Paciente recorrente da clínica. Prefere contato pelo WhatsApp e horários pela manhã.
+          </p>
+          {(attendance.notes ?? []).map((note, index) => (
+            <p key={`${attendance.id}-note-${index}`} className="rounded-2xl border border-clinical-orange/15 bg-clinical-orange/[0.06] p-3 text-[13px] leading-5 text-clinical-slate">
+              {note}
+            </p>
+          ))}
+        </div>
       </div>
 
       <div className="mt-5">

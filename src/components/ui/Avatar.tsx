@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/cn";
 
 type AvatarProps = {
@@ -47,9 +48,9 @@ export function Avatar({ name, src, size = "md", tone = "charcoal", status, clas
   const [failed, setFailed] = useState(false);
   const showPhoto = Boolean(src) && !failed;
   return (
-    <span className={cn("relative inline-flex shrink-0 items-center justify-center overflow-hidden font-extrabold", sizes[size], !showPhoto && tones[tone], className)} aria-hidden="true">
+    <span className={cn("relative inline-flex shrink-0 items-center justify-center overflow-hidden font-extrabold", sizes[size], !showPhoto && tones[tone], className)} aria-label={name} role="img">
       {showPhoto ? (
-        <img src={src} alt="" onError={() => setFailed(true)} className="size-full object-cover" loading="lazy" />
+        <Image src={src ?? ""} alt={name} width={64} height={64} unoptimized onError={() => setFailed(true)} className="size-full object-cover" />
       ) : (
         getInitials(name)
       )}

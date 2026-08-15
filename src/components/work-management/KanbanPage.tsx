@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ModalField, ModalSelect, ModalTextarea } from "@/components/ui/ModalField";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { PageHeader, SearchField } from "@/components/ui/Week1Primitives";
 import { cn } from "@/lib/cn";
 
@@ -37,10 +38,12 @@ const columnTone: Record<TaskStatus, string> = {
 };
 
 const priorityTone: Record<Task["priority"], string> = {
-  Alta: "bg-clinical-red/10 text-clinical-red",
+  Alta: "bg-red-500/10 text-red-500",
   Média: "bg-clinical-orange/12 text-clinical-orange",
   Baixa: "bg-clinical-surfaceMuted text-clinical-muted"
 };
+
+type PendingConfirmation = { type: "delete"; task: Task } | { type: "restore" };
 
 function priorityLabel(priority: Task["priority"]) {
   return { Alta: "Alta", Média: "Média", Baixa: "Baixa" }[priority];
@@ -57,6 +60,9 @@ export function KanbanPage() {
   const [priority, setPriority] = useState(ALL);
   const [responsible, setResponsible] = useState(ALL);
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
+  const [feedback, setFeedback] = useState("");
+  const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
 
   usePageEnter(pageRef, [
     { selector: "[data-kanban-col]", from: { opacity: 0, y: 22 } },
@@ -65,9 +71,51 @@ export function KanbanPage() {
 
   useEffect(() => setTasks(readLocalCache(CACHE_KEY, initialTasks)), []);
 
+  useEffect(() => () => {
+    if (feedbackTimerRef.current) window.clearTimeout(feedbackTimerRef.current);
+  }, []);
+
+  function announce(message: string) {
+    setFeedback(message);
+    if (feedbackTimerRef.current) window.clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = window.setTimeout(() => setFeedback(""), 3200);
+  }
+
   function persist(next: Task[]) { setTasks(next); writeLocalCache(CACHE_KEY, next); }
-  function moveTask(id: string, status: TaskStatus) { persist(tasks.map((task) => task.id === id ? { ...task, status } : task)); }
-  function removeTask(id: string) { persist(tasks.filter((task) => task.id !== id)); }
+
+  function moveTask(id: string, status: TaskStatus) {
+    const task = tasks.find((item) => item.id === id);
+    if (!task) return;
+    if (task.status === status) {
+      announce(`${task.title} já está em ${status}.`);
+      return;
+    }
+    persist(tasks.map((item) => item.id === id ? { ...item, status } : item));
+    announce(`${task.title} movido para ${status}.`);
+  }
+
+  function requestRemove(task: Task) { setPendingConfirmation({ type: "delete", task }); }
+
+  function confirmPendingAction() {
+    if (!pendingConfirmation) return;
+    if (pendingConfirmation.type === "delete") {
+      persist(tasks.filter((task) => task.id !== pendingConfirmation.task.id));
+      announce(`Cartão "${pendingConfirmation.task.title}" excluído.`);
+    } else {
+      persist([...initialTasks]);
+      announce("Cartões de demonstração restaurados.");
+    }
+    setPendingConfirmation(null);
+  }
+
+  function handleCardKeyDown(event: React.KeyboardEvent<HTMLElement>, task: Task) {
+    if (!event.altKey) return;
+    const currentIndex = kanbanColumns.findIndex((column) => column.id === task.status);
+    const targetIndex = event.key === "ArrowRight" ? currentIndex + 1 : event.key === "ArrowLeft" ? currentIndex - 1 : -1;
+    if (targetIndex < 0 || targetIndex >= kanbanColumns.length) return;
+    event.preventDefault();
+    moveTask(task.id, kanbanColumns[targetIndex].id);
+  }
 
   function makePreview(task: Task) {
     const preview = document.createElement("div");
@@ -97,7 +145,7 @@ export function KanbanPage() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const next: Task = {
-      id: `TK-${String(tasks.length + 1).padStart(2, "0")}`,
+      id: `TK-${String(Math.max(-1, ...tasks.map((task) => Number(task.id.replace("TK-", "")))) + 1).padStart(2, "0")}`,
       title: String(form.get("title")),
       description: String(form.get("description")),
       responsible: String(form.get("responsible")),
@@ -109,6 +157,7 @@ export function KanbanPage() {
     };
     persist([...tasks, next]);
     setCreateOpen(false);
+    announce(`Cartão "${next.title}" criado em ${next.status}.`);
   }
 
   const sectors = Array.from(new Set(tasks.map((task) => task.sector)));
@@ -174,8 +223,11 @@ export function KanbanPage() {
           <Dropdown label="Prioridade" value={priority} options={[ALL, "Alta", "Média", "Baixa"]} onChange={setPriority} />
           <Dropdown label="Responsável" value={responsible} options={[ALL, ...responsibles]} onChange={setResponsible} />
         </div>
-        <Button variant="secondary" size="sm" onClick={() => { persist(initialTasks); }} className="shrink-0"><RotateCcw className="size-4" />Restaurar demo</Button>
+        <Button variant="secondary" size="sm" onClick={() => setPendingConfirmation({ type: "restore" })} className="shrink-0"><RotateCcw className="size-4" />Restaurar demo</Button>
       </div>
+
+      {feedback ? <div role="status" className="mb-4 flex items-center gap-2 rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-4 py-3 text-sm font-bold text-clinical-green"><Check className="size-4" />{feedback}</div> : null}
+      <p id="kanban-keyboard-help" className="sr-only">Foque um cartão e use Alt mais seta para a esquerda ou direita para movê-lo entre as etapas.</p>
 
       <div className="clinical-scrollbar grid grid-cols-1 gap-4 overflow-x-auto pb-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {kanbanColumns.map((column) => {
@@ -187,7 +239,8 @@ export function KanbanPage() {
               data-kanban-col
               onDragOver={(event) => { event.preventDefault(); setDropTarget(column.id); }}
               onDragLeave={() => setDropTarget(null)}
-              onDrop={() => drop(column.id)}
+              onDrop={(event) => { event.preventDefault(); drop(column.id); }}
+              aria-label={`Etapa ${column.label}`}
               className={cn(
                 "flex min-h-[420px] min-w-[280px] flex-col rounded-[26px] border p-3 transition duration-200",
                 dropTarget === column.id ? "border-clinical-blue/55 bg-clinical-blue/[0.10] shadow-glow" : "border-clinical-border/[0.14] bg-clinical-surface/65"
@@ -212,9 +265,13 @@ export function KanbanPage() {
                   <article
                     key={task.id}
                     data-card
+                    tabIndex={0}
                     draggable
                     onDragStart={(event) => startDrag(event, task)}
-                    onDragEnd={() => setDragged(null)}
+                    onDragEnd={() => { setDragged(null); setDropTarget(null); }}
+                    onKeyDown={(event) => handleCardKeyDown(event, task)}
+                    aria-label={`Cartão ${task.title}, etapa ${task.status}`}
+                    aria-describedby="kanban-keyboard-help"
                     className={cn(
                       "group relative rounded-2xl border border-clinical-border/[0.12] bg-clinical-surface/90 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-clinical-blue/25 hover:shadow-card dark:shadow-[0_12px_28px_rgba(0,0,0,0.14)]",
                       dragged === task.id && "opacity-40"
@@ -222,9 +279,9 @@ export function KanbanPage() {
                   >
                     <button
                       type="button"
-                      onClick={() => removeTask(task.id)}
+                      onClick={() => requestRemove(task)}
                       aria-label={`Excluir ${task.title}`}
-                      className="absolute right-2 top-2 z-10 hidden size-6 items-center justify-center rounded-lg text-clinical-muted transition hover:bg-clinical-red/10 hover:text-clinical-red group-hover:flex"
+                      className="absolute right-2 top-2 z-10 flex size-6 items-center justify-center rounded-lg text-clinical-muted opacity-70 transition hover:bg-red-500/10 hover:text-red-500 group-hover:opacity-100 group-focus-within:opacity-100"
                     >
                       <X className="size-3.5" />
                     </button>
@@ -242,7 +299,7 @@ export function KanbanPage() {
                       {task.tag ? <span className="rounded-full bg-clinical-green/[0.09] px-2 py-1 text-[11px] font-bold text-clinical-green">#{task.tag}</span> : null}
                     </div>
                     <div className="mt-3 flex items-center justify-between border-t border-clinical-border/[0.10] pt-3">
-                      <span className={cn("flex items-center gap-1.5 text-[11px] font-bold", task.status !== "Concluído" && task.due.toLowerCase().includes("hoje") ? "text-clinical-red" : "text-clinical-muted")}>
+                      <span className={cn("flex items-center gap-1.5 text-[11px] font-bold", task.status !== "Concluído" && task.due.toLowerCase().includes("hoje") ? "text-red-500" : "text-clinical-muted")}>
                         <CalendarClock className="size-3.5" />{task.due}
                       </span>
                       <span className="flex items-center gap-1.5 text-[11px] font-bold text-clinical-muted"><GripVertical className="size-3.5 text-clinical-border" />{task.responsible}</span>
@@ -251,7 +308,7 @@ export function KanbanPage() {
                 ))}
                 {items.length === 0 ? (
                   <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-clinical-border/[0.18] p-6 text-center text-xs font-semibold text-clinical-muted">
-                    Arraste cartões para cá
+                     {hasFilters ? "Nenhum cartão nesta etapa com os filtros atuais" : "Arraste cartões para cá"}
                   </div>
                 ) : null}
               </div>
@@ -295,6 +352,15 @@ export function KanbanPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmationDialog
+        open={Boolean(pendingConfirmation)}
+        onClose={() => setPendingConfirmation(null)}
+        onConfirm={confirmPendingAction}
+        title={pendingConfirmation?.type === "restore" ? "Restaurar cartões de demonstração?" : "Excluir cartão?"}
+        description={pendingConfirmation?.type === "restore" ? "As alterações locais do Kanban serão substituídas pelos cartões de demonstração." : `O cartão "${pendingConfirmation?.task.title ?? ""}" será removido desta visão local.`}
+        confirmLabel={pendingConfirmation?.type === "restore" ? "Restaurar" : "Excluir cartão"}
+      />
     </div>
   );
 }
