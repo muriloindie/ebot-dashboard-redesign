@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import {
   attendances,
-  attendanceIndicators,
   attendanceChannels,
   attendanceResponsibles,
   attendanceUnits,
@@ -48,11 +47,10 @@ import { ModalField, ModalSelect } from "@/components/ui/ModalField";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Avatar } from "@/components/ui/Avatar";
 import { ChannelIcon } from "@/components/ui/ChannelIcon";
-import { StatStrip, type StatItem } from "@/components/ui/StatStrip";
 import { ViewSwitch } from "@/components/ui/ViewSwitch";
 import { PriorityBadge } from "@/components/ui/PriorityBadge";
 import { Timeline } from "@/components/ui/Timeline";
-import { PageHeader, SearchField, StatePanel } from "@/components/ui/Week1Primitives";
+import { PageHeader, StatePanel } from "@/components/ui/Week1Primitives";
 import { ChatComposer, type ComposerMessage } from "@/components/operations/ChatComposer";
 import { AiSuggestion, QuickReplies } from "@/components/operations/QuickReplies";
 import { cn } from "@/lib/cn";
@@ -71,15 +69,6 @@ const statusTone: Record<AttendanceStatus, "blue" | "orange" | "green" | "neutra
   "Resolvido pela IA": "green",
   Encerrado: "neutral"
 };
-
-const indicators: StatItem[] = [
-  { id: "active", label: "Atendimentos ativos", value: String(attendanceIndicators.active), hint: "agora", tone: "blue", icon: Headphones },
-  { id: "waiting", label: "Aguardando atendimento", value: String(attendanceIndicators.waiting), hint: "na fila", tone: "orange", icon: Clock3 },
-  { id: "human", label: "Em atendimento humano", value: String(attendanceIndicators.inHuman), hint: "com a equipe", tone: "teal", icon: UserRoundCheck },
-  { id: "ai", label: "Resolvidos pela IA", value: String(attendanceIndicators.resolvedByAi), hint: "hoje", tone: "green", icon: Bot },
-  { id: "wait-time", label: "Tempo médio de espera", value: attendanceIndicators.avgWait, hint: "última hora", tone: "neutral", icon: Timer },
-  { id: "sla", label: "SLA de resposta", value: attendanceIndicators.sla, hint: "meta 90%", tone: "green", icon: Flag }
-];
 
 function getInitialMessages(source: StoredAttendance[] = attendances) {
   return Object.fromEntries(
@@ -116,7 +105,6 @@ export function AttendancesPage() {
   const [priority, setPriority] = useState(ALL);
   const [unit, setUnit] = useState(ALL);
   const [period, setPeriod] = useState("Hoje");
-  const [sort, setSort] = useState("prioridade");
 
   const [mobileChat, setMobileChat] = useState(false);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
@@ -130,10 +118,9 @@ export function AttendancesPage() {
   const messagesRef = useRef<Record<string, StoredMessage[]>>({});
 
   usePageEnter(pageRef, [
-    { selector: "[data-stat-card]", from: { opacity: 0, y: 18 } },
     { selector: "[data-filter-bar]", from: { opacity: 0, y: 14 }, to: { duration: 0.45, ease: "power3.out" } },
     { selector: "[data-chat-panel]", from: { opacity: 0, x: 24 }, to: { duration: 0.5, ease: "power3.out" } },
-    { selector: "[data-profile-panel]", from: { opacity: 0, x: 28 }, to: { duration: 0.5, ease: "power3.out" } }
+    { selector: "[data-queue-panel]", from: { opacity: 0, x: -24 }, to: { duration: 0.5, ease: "power3.out" } }
   ], { stagger: 0.05, delay: 0.05 });
 
   useEffect(() => {
@@ -160,7 +147,7 @@ export function AttendancesPage() {
   const filtered = useMemo(() => {
     return rows.filter((attendance) => {
       const conversationText = (messages[attendance.id] ?? []).map((message) => message.text).join(" ").toLowerCase();
-      const matchesSearch = `${attendance.patientName} ${attendance.lastMessage} ${attendance.phone} ${attendance.id} ${conversationText}`.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = `${attendance.clientName} ${attendance.lastMessage} ${attendance.phone} ${attendance.id} ${conversationText}`.toLowerCase().includes(search.toLowerCase());
       const matchesChannel = channel === ALL || attendance.channel === channel;
       const matchesStatus = status === ALL || attendance.status === status;
       const matchesResponsible = responsible === ALL || attendance.responsible === responsible;
@@ -175,11 +162,9 @@ export function AttendancesPage() {
   const sorted = useMemo(() => {
     const list = [...filtered];
     const order = { Alta: 0, Média: 1, Baixa: 2 };
-    if (sort === "prioridade") list.sort((a, b) => order[a.priority] - order[b.priority] || b.unread - a.unread);
-    else if (sort === "recente") list.sort((a, b) => b.time.localeCompare(a.time));
-    else list.sort((a, b) => a.time.localeCompare(b.time));
+    list.sort((a, b) => order[a.priority] - order[b.priority] || b.unread - a.unread);
     return list;
-  }, [filtered, sort]);
+  }, [filtered]);
 
   function showNotice(message: string) {
     setNotice(message);
@@ -200,7 +185,7 @@ export function AttendancesPage() {
 
     const currentRow = rowsRef.current.find((row) => row.id === id);
     if (!currentRow) return;
-    const unread = message.from === "patient" ? currentRow.unread + 1 : 0;
+    const unread = message.from === "client" ? currentRow.unread + 1 : 0;
     persistRows(rowsRef.current.map((row) => row.id === id ? { ...row, lastMessage: messagePreview(message), time: message.time, unread } : row));
   }
 
@@ -266,7 +251,7 @@ export function AttendancesPage() {
     patchAttendance(selected.id, { status: "Encerrado" }, {
       id: `sys-${Date.now()}`,
       from: "human",
-      text: "Atendimento encerrado pela equipe. O histórico permanece disponível para consulta.",
+      text: "Atendimento encerrado pela equipe. O histórico permanece disponível para agendamento.",
       time: "agora"
     });
     setCloseOpen(false);
@@ -304,7 +289,7 @@ export function AttendancesPage() {
     const name = String(form.get("name") ?? "").trim();
     const phone = String(form.get("phone") ?? "").trim();
     if (!name || !phone) {
-      showNotice("Informe o nome e o telefone do paciente.");
+      showNotice("Informe o nome e o telefone do cliente.");
       return;
     }
     const highestId = rowsRef.current.reduce((highest, row) => {
@@ -314,15 +299,15 @@ export function AttendancesPage() {
     const initialMessage: AttendanceMessage = { id: `init-${Date.now()}`, from: "human", text: "Atendimento criado pela central. A IA assumirá o primeiro contato.", time: "agora" };
     const next: StoredAttendance = {
       id: `AT-${String(highestId + 1)}`,
-      patientName: name,
+      clientName: name,
       phone,
       channel: String(form.get("channel") ?? "WhatsApp") as Attendance["channel"],
       status: "Aguardando",
       priority: String(form.get("priority") ?? "Média") as Attendance["priority"],
       responsible: "IA",
       source: "IA" as AttendanceSource,
-      unit: String(form.get("unit") ?? "Unidade Centro") as Attendance["unit"],
-      sector: String(form.get("sector") ?? "Recepção"),
+      unit: String(form.get("unit") ?? "Filial Centro") as Attendance["unit"],
+      sector: String(form.get("sector") ?? "Atendimento"),
       queue: String(form.get("queue") ?? "Primeiro contato"),
       lastMessage: "Atendimento iniciado pela equipe.",
       time: "agora",
@@ -368,25 +353,23 @@ export function AttendancesPage() {
   const unreadTotal = rows.reduce((sum, row) => sum + row.unread, 0);
 
   return (
-    <div ref={pageRef}>
+    <div ref={pageRef} className="md:flex md:h-[calc(100dvh-97px)] md:flex-col md:overflow-hidden lg:h-[calc(100dvh-113px)] xl:h-[calc(100dvh-129px)]">
       <PageHeader
         eyebrow="Operação / Central de atendimento"
         title="Atendimentos"
-        description="Gerencie conversas, pacientes e atendimentos em tempo real."
-        aside={<span className="inline-flex items-center gap-2 rounded-full bg-clinical-orange/[0.10] px-3 py-2 text-xs font-extrabold text-clinical-orange"><Clock3 className="size-4" />{unreadTotal} não lidos na fila</span>}
+        description="Gerencie conversas, clientes e atendimentos em tempo real."
+        aside={<span className="inline-flex items-center gap-2 rounded-full bg-ebot-orange/[0.10] px-3 py-2 text-xs font-extrabold text-ebot-orange"><Clock3 className="size-4" />{unreadTotal} não lidos na fila</span>}
         action={<Button onClick={() => setNewOpen(true)}><UserPlus className="size-4" />Novo atendimento</Button>}
       />
 
-      <StatStrip items={indicators} className="mb-4" />
-
-      <div data-filter-bar className="mb-4 flex flex-col gap-2 rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/70 p-2.5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <SearchField value={search} onChange={setSearch} placeholder="Buscar por paciente, mensagem ou nº do atendimento" />
+      <div data-filter-bar className="mb-3 flex shrink-0 flex-col gap-2 rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/70 p-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ebot-muted">Filtros da fila</p>
           <div className="flex shrink-0 items-center gap-2">
             <ViewSwitch views={[{ id: "lista", label: "Lista", icon: List }, { id: "cards", label: "Cards", icon: LayoutGrid }]} value={view} onChange={(id) => setView(id as ViewMode)} />
             {hasFilters ? (
-              <button type="button" onClick={clearFilters} className="flex h-11 shrink-0 items-center gap-2 rounded-2xl border border-clinical-orange/25 bg-clinical-orange/[0.08] px-3 text-sm font-extrabold text-clinical-orange transition hover:bg-clinical-orange/[0.14]">
-                <X className="size-4" />Limpar filtros
+              <button type="button" onClick={clearFilters} className="flex h-9 shrink-0 items-center gap-2 rounded-2xl border border-ebot-orange/25 bg-ebot-orange/[0.08] px-3 text-xs font-extrabold text-ebot-orange transition hover:bg-ebot-orange/[0.14]">
+                <X className="size-3.5" />Limpar filtros
               </button>
             ) : null}
           </div>
@@ -396,13 +379,13 @@ export function AttendancesPage() {
           <Dropdown label="Status" value={status} options={statusOptions} onChange={setStatus} />
           <Dropdown label="Prioridade" value={priority} options={priorityOptions} onChange={setPriority} />
           <Dropdown label="Atendente" value={responsible} options={responsibles} onChange={setResponsible} />
-          <Dropdown label="Unidade" value={unit} options={[ALL, ...attendanceUnits]} onChange={setUnit} />
+          <Dropdown label="Filial" value={unit} options={[ALL, ...attendanceUnits]} onChange={setUnit} />
           <Dropdown label="Período" value={period} options={periods} onChange={setPeriod} />
         </div>
       </div>
 
       {notice ? (
-        <div role="status" className="mb-4 flex items-center justify-between rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-4 py-3 text-sm font-bold text-clinical-green">
+        <div role="status" className="mb-4 flex items-center justify-between rounded-2xl border border-ebot-green/20 bg-ebot-green/[0.08] px-4 py-3 text-sm font-bold text-ebot-green">
           <span className="flex items-center gap-2"><Check className="size-4" />{notice}</span>
           <button type="button" onClick={() => setNotice("")} aria-label="Fechar aviso"><X className="size-4" /></button>
         </div>
@@ -416,27 +399,22 @@ export function AttendancesPage() {
           action={<Button size="sm" variant="secondary" onClick={clearFilters}>Limpar filtros</Button>}
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)] xl:grid-cols-[minmax(240px,0.7fr)_minmax(0,1.3fr)_minmax(220px,0.55fr)] md:items-stretch">
-          <section className={cn("min-w-0 flex-col overflow-hidden rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/75 md:flex md:h-[calc(100dvh-300px)] md:min-h-[440px]", mobileChat ? "hidden" : "flex")}>
-            <div className="border-b border-clinical-border/[0.12] px-4 py-3">
+        <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[minmax(240px,0.66fr)_minmax(0,1.34fr)] md:items-stretch">
+          <section data-queue-panel className={cn("min-h-0 min-w-0 flex-col overflow-hidden rounded-[24px] border border-ebot-border/[0.14] border-t-[3px] border-t-ebot-slate/60 bg-ebot-surface/75 md:flex md:h-full", mobileChat ? "hidden" : "flex")}>
+            <div className="border-b border-ebot-border/[0.12] px-4 py-3">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-extrabold text-clinical-dark">Fila de atendimento</h2>
-                <span className="text-xs font-bold text-clinical-muted">{filtered.length} registros</span>
+                <h2 className="text-sm font-extrabold text-ebot-dark">Fila de atendimento</h2>
+                <span className="text-xs font-bold text-ebot-muted">{filtered.length} registros</span>
               </div>
-              <div className="mt-2.5 flex items-center gap-2">
-                <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border border-clinical-border/[0.14] bg-clinical-surface/80 px-3 text-xs text-clinical-muted transition focus-within:border-clinical-blue/45 focus-within:ring-2 focus-within:ring-clinical-blue/10">
-                  <Search className="size-3.5 shrink-0 text-clinical-blue" aria-hidden="true" />
+              <div className="mt-2.5">
+                <label className="flex h-9 min-w-0 w-full items-center gap-2 rounded-xl border border-ebot-border/[0.14] bg-ebot-surface/80 px-3 text-xs text-ebot-muted transition focus-within:border-ebot-primary/45 focus-within:ring-2 focus-within:ring-ebot-primary/10">
+                  <Search className="size-3.5 shrink-0 text-ebot-primary" aria-hidden="true" />
                   <span className="sr-only">Buscar na fila</span>
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nome ou texto da conversa" className="min-w-0 flex-1 bg-transparent font-medium text-clinical-dark outline-none placeholder:text-clinical-muted/70" />
+                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nome ou texto da conversa" className="min-w-0 flex-1 bg-transparent font-medium text-ebot-dark outline-none placeholder:text-ebot-muted/70" />
                 </label>
-                <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Ordenar fila" className="h-9 shrink-0 cursor-pointer rounded-xl border border-clinical-border/[0.14] bg-clinical-surface/80 px-2.5 text-xs font-extrabold text-clinical-muted outline-none transition focus:border-clinical-blue/45">
-                  <option value="prioridade">Prioridade</option>
-                  <option value="recente">Mais recentes</option>
-                  <option value="antigo">Mais antigos</option>
-                </select>
               </div>
             </div>
-            <div className="clinical-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
+            <div className="ebot-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
               {view === "lista" ? (
                 <div className="space-y-1">
                   {sorted.map((attendance) => (
@@ -453,9 +431,9 @@ export function AttendancesPage() {
             </div>
           </section>
 
-          <section data-chat-panel className={cn("min-w-0 flex-col overflow-hidden rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/75 md:flex md:h-[calc(100dvh-300px)] md:min-h-[440px]", mobileChat ? "flex" : "hidden")}>
-            <div className="flex items-center gap-2 border-b border-clinical-border/[0.12] px-2 py-1.5 md:hidden">
-              <button type="button" onClick={() => setMobileChat(false)} className="flex h-9 items-center gap-1.5 rounded-xl px-2 text-xs font-extrabold text-clinical-blue transition hover:bg-clinical-blue/10" aria-label="Voltar para a fila de atendimento">
+          <section data-chat-panel className={cn("min-h-0 min-w-0 flex-col overflow-hidden rounded-[24px] border border-ebot-primary/15 border-t-[3px] border-t-ebot-primary/70 bg-ebot-surface shadow-[0_18px_44px_rgba(4,27,21,0.10)] md:flex md:h-full", mobileChat ? "flex" : "hidden")}>
+            <div className="flex items-center gap-2 border-b border-ebot-border/[0.12] px-2 py-1.5 md:hidden">
+              <button type="button" onClick={() => setMobileChat(false)} className="flex h-9 items-center gap-1.5 rounded-xl px-2 text-xs font-extrabold text-ebot-primary transition hover:bg-ebot-primary/10" aria-label="Voltar para a fila de atendimento">
                 <ArrowLeft className="size-4" />Fila
               </button>
             </div>
@@ -467,8 +445,8 @@ export function AttendancesPage() {
               onTransfer={() => setTransferOpen(true)}
               onClose={() => setCloseOpen(true)}
               onReopen={reopenAttendance}
-              onPhone={() => showNotice(`Ligação local preparada para ${selected?.patientName ?? "o paciente"}.`)}
-              onVideo={() => showNotice(`Videochamada local preparada para ${selected?.patientName ?? "o paciente"}.`)}
+              onPhone={() => showNotice(`Ligação local preparada para ${selected?.clientName ?? "o cliente"}.`)}
+              onVideo={() => showNotice(`Videochamada local preparada para ${selected?.clientName ?? "o cliente"}.`)}
               onMenuAction={(action) => {
                 if (action === "unread") markSelectedUnread();
                 if (action === "profile") setProfileDrawerOpen(true);
@@ -479,21 +457,17 @@ export function AttendancesPage() {
               setQuickOpen={setQuickOpen}
             />
           </section>
-
-          <section data-profile-panel className="hidden min-w-0 flex-col overflow-hidden rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/75 xl:flex xl:h-[calc(100dvh-300px)] xl:min-h-[440px]">
-            <PatientProfilePane attendance={selected} onOpenProfile={() => router.push(`/pacientes?q=${encodeURIComponent(selected?.patientName ?? "")}`)} onAddNote={() => setNoteOpen(true)} />
-          </section>
         </div>
       )}
 
-      <Drawer open={profileDrawerOpen} onClose={() => setProfileDrawerOpen(false)} title="Perfil do paciente" description={selected?.patientName} width="max-w-lg">
-        {selected ? <PatientProfilePane attendance={selected} onOpenProfile={() => { setProfileDrawerOpen(false); router.push(`/pacientes?q=${encodeURIComponent(selected.patientName)}`); }} onAddNote={() => setNoteOpen(true)} /> : null}
+      <Drawer open={profileDrawerOpen} onClose={() => setProfileDrawerOpen(false)} title="Perfil do cliente" description={selected?.clientName} width="max-w-lg">
+        {selected ? <ClientProfilePane attendance={selected} onOpenProfile={() => { setProfileDrawerOpen(false); router.push(`/contatos?q=${encodeURIComponent(selected.clientName)}`); }} onAddNote={() => setNoteOpen(true)} /> : null}
       </Drawer>
 
       <Modal open={newOpen} onClose={() => setNewOpen(false)} title="Novo atendimento" eyebrow="Central de atendimento" description="Crie um atendimento manualmente e deixe a IA assumir o primeiro contato." icon={UserPlus} className="max-w-2xl">
         <form onSubmit={createAttendance} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <ModalField name="name" label="Nome do paciente" icon={UserPlus} placeholder="Ex.: Camila Rodrigues" required />
+            <ModalField name="name" label="Nome do cliente" icon={UserPlus} placeholder="Ex.: Camila Rodrigues" required />
             <ModalField name="phone" label="Telefone" icon={PhoneCall} placeholder="+55 11 99999-9999" required />
             <ModalSelect name="channel" label="Canal" icon={MessageSquareText} defaultValue="WhatsApp">
               <option>WhatsApp</option><option>Instagram</option><option>E-mail</option><option>Telefone</option>
@@ -501,15 +475,15 @@ export function AttendancesPage() {
             <ModalSelect name="priority" label="Prioridade" icon={Flag} defaultValue="Média">
               <option>Alta</option><option>Média</option><option>Baixa</option>
             </ModalSelect>
-            <ModalSelect name="unit" label="Unidade" icon={Headphones} defaultValue="Unidade Centro">
-              <option>Unidade Centro</option><option>Unidade Norte</option><option>Unidade Sul</option>
+            <ModalSelect name="unit" label="Filial" icon={Headphones} defaultValue="Filial Centro">
+              <option>Filial Centro</option><option>Filial Norte</option><option>Filial Sul</option>
             </ModalSelect>
-            <ModalSelect name="sector" label="Setor" icon={StickyNote} defaultValue="Recepção">
-              <option>Recepção</option><option>Cardiologia</option><option>Ortopedia</option><option>Dermatologia</option><option>Pediatria</option><option>Exames</option>
+            <ModalSelect name="sector" label="Setor" icon={StickyNote} defaultValue="Atendimento">
+              <option>Atendimento</option><option>Frota</option><option>Corporativo</option><option>Varejo</option><option>Suporte</option><option>Pedidos</option>
             </ModalSelect>
             <ModalField name="queue" label="Fila" icon={List} placeholder="Ex.: Primeiro contato" className="sm:col-span-2" />
           </div>
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
+          <div className="flex justify-end gap-2 border-t border-ebot-border/[0.12] pt-4">
             <Button type="button" variant="ghost" onClick={() => setNewOpen(false)}>Cancelar</Button>
             <Button type="submit"><Plus className="size-4" />Criar atendimento</Button>
           </div>
@@ -523,29 +497,29 @@ export function AttendancesPage() {
               .filter((responsible) => responsible !== "IA" && responsible !== "IA + humano" && responsible !== selected?.responsible)
               .map((responsible) => <option key={responsible}>{responsible}</option>)}
           </ModalSelect>
-          <div className="rounded-2xl border border-clinical-blue/15 bg-clinical-blue/[0.06] p-3 text-xs font-semibold leading-5 text-clinical-slate">O paciente será informado sobre a transferência e o histórico completo acompanha a conversa.</div>
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
+          <div className="rounded-2xl border border-ebot-primary/15 bg-ebot-primary/[0.06] p-3 text-xs font-semibold leading-5 text-ebot-slate">O cliente será informado sobre a transferência e o histórico completo acompanha a conversa.</div>
+          <div className="flex justify-end gap-2 border-t border-ebot-border/[0.12] pt-4">
             <Button type="button" variant="ghost" onClick={() => setTransferOpen(false)}>Cancelar</Button>
             <Button type="submit"><Send className="size-4" />Transferir</Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={closeOpen} onClose={() => setCloseOpen(false)} title="Encerrar atendimento" eyebrow="Central de atendimento" description={selected ? `Encerrar o atendimento ${selected.id} de ${selected.patientName}?` : undefined} icon={Check} className="max-w-xl">
+      <Modal open={closeOpen} onClose={() => setCloseOpen(false)} title="Encerrar atendimento" eyebrow="Central de atendimento" description={selected ? `Encerrar o atendimento ${selected.id} de ${selected.clientName}?` : undefined} icon={Check} className="max-w-xl">
         <div className="space-y-4">
-          <div className="rounded-2xl border border-clinical-orange/20 bg-clinical-orange/[0.07] p-3 text-xs font-semibold leading-5 text-clinical-slate">O atendimento sairá da fila ativa e o histórico continuará disponível no perfil do paciente.</div>
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
+          <div className="rounded-2xl border border-ebot-orange/20 bg-ebot-orange/[0.07] p-3 text-xs font-semibold leading-5 text-ebot-slate">O atendimento sairá da fila ativa e o histórico continuará disponível no perfil do cliente.</div>
+          <div className="flex justify-end gap-2 border-t border-ebot-border/[0.12] pt-4">
             <Button type="button" variant="ghost" onClick={() => setCloseOpen(false)}>Cancelar</Button>
             <Button type="button" onClick={closeAttendance}><Check className="size-4" />Encerrar atendimento</Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={noteOpen} onClose={() => setNoteOpen(false)} title="Adicionar observação" eyebrow="Perfil do paciente" description={selected ? `Observação interna sobre ${selected.patientName}.` : undefined} icon={StickyNote} className="max-w-xl">
+      <Modal open={noteOpen} onClose={() => setNoteOpen(false)} title="Adicionar observação" eyebrow="Perfil do cliente" description={selected ? `Observação interna sobre ${selected.clientName}.` : undefined} icon={StickyNote} className="max-w-xl">
         <form onSubmit={addNote} className="space-y-4">
-          <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3 text-sm leading-6 text-clinical-muted">A observação fica visível apenas para a equipe e entra no histórico do paciente.</div>
-          <ModalField name="note" label="Observação" icon={StickyNote} placeholder="Ex.: Paciente prefere contato por e-mail." required />
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
+          <div className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-3 text-sm leading-6 text-ebot-muted">A observação fica visível apenas para a equipe e entra no histórico do cliente.</div>
+          <ModalField name="note" label="Observação" icon={StickyNote} placeholder="Ex.: Cliente prefere contato por e-mail." required />
+          <div className="flex justify-end gap-2 border-t border-ebot-border/[0.12] pt-4">
             <Button type="button" variant="ghost" onClick={() => setNoteOpen(false)}>Cancelar</Button>
             <Button type="submit"><Check className="size-4" />Registrar</Button>
           </div>
@@ -559,37 +533,39 @@ function AttendanceRow({ attendance, active, onSelect }: { attendance: Attendanc
   return (
     <button
       type="button"
+      data-attendance-item
+      data-attendance-status={attendance.status}
       onClick={onSelect}
       className={cn(
         "animate-list-in w-full rounded-2xl border p-3 text-left transition duration-200",
-        active ? "border-clinical-blue/30 bg-clinical-blue/[0.09] shadow-[0_8px_22px_rgba(58,157,202,0.10)]" : "border-transparent hover:bg-clinical-surfaceMuted/70"
+        active ? "border-ebot-primary/30 bg-ebot-primary/[0.09] shadow-[0_8px_22px_rgba(4,27,21,0.10)]" : "border-transparent hover:bg-ebot-surfaceMuted/70"
       )}
     >
       <div className="flex items-start gap-3">
-        <Avatar name={attendance.patientName} status={attendance.status === "Aguardando" ? "busy" : "online"} />
+        <Avatar name={attendance.clientName} status={attendance.status === "Aguardando" ? "busy" : "online"} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-sm font-extrabold text-clinical-dark">{attendance.patientName}</p>
-            <span className="shrink-0 text-[11px] font-bold text-clinical-muted">{attendance.time}</span>
+            <p className="truncate text-sm font-extrabold text-ebot-dark">{attendance.clientName}</p>
+            <span className="shrink-0 text-[11px] font-bold text-ebot-muted">{attendance.time}</span>
           </div>
           <div className="mt-0.5 flex items-center gap-1.5">
             <ChannelIcon channel={attendance.channel} />
-            <span className="text-[11px] font-bold text-clinical-muted">{attendance.id}</span>
+            <span className="text-[11px] font-bold text-ebot-muted">{attendance.id}</span>
           </div>
-          <p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-clinical-slate">{attendance.lastMessage}</p>
+          <p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-ebot-slate">{attendance.lastMessage}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <StatusChip label={attendance.status} tone={statusTone[attendance.status]} />
             <PriorityBadge priority={attendance.priority} />
-            <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-extrabold", attendance.source === "Humano" ? "bg-clinical-teal/10 text-clinical-teal" : "bg-clinical-blue/10 text-clinical-blueText")}>
+            <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-extrabold", attendance.source === "Humano" ? "bg-ebot-teal/10 text-ebot-teal" : "bg-ebot-primary/10 text-ebot-primaryText")}>
               <Bot className="size-3" />
               {attendance.source === "Humano" ? "Humano" : "IA"}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2 py-1 text-[11px] font-extrabold text-clinical-slate">
+            <span className="inline-flex items-center gap-1 rounded-full bg-ebot-surfaceMuted px-2 py-1 text-[11px] font-extrabold text-ebot-slate">
               <UserRound className="size-3" />
               {attendance.responsible}
             </span>
             {attendance.unread > 0 ? (
-              <span className="flex size-5 items-center justify-center rounded-full bg-clinical-blue text-[10px] font-black text-clinical-charcoal">{attendance.unread}</span>
+              <span className="flex size-5 items-center justify-center rounded-full bg-ebot-primary text-[10px] font-black text-ebot-charcoal">{attendance.unread}</span>
             ) : null}
           </div>
         </div>
@@ -602,32 +578,34 @@ function AttendanceCard({ attendance, active, onSelect }: { attendance: Attendan
   return (
     <button
       type="button"
+      data-attendance-item
+      data-attendance-status={attendance.status}
       onClick={onSelect}
       className={cn(
         "animate-list-in rounded-2xl border p-4 text-left transition duration-200",
-        active ? "border-clinical-blue/30 bg-clinical-blue/[0.09]" : "border-clinical-border/[0.12] bg-clinical-surfaceMuted/30 hover:border-clinical-blue/25 hover:bg-clinical-surface"
+        active ? "border-ebot-primary/30 bg-ebot-primary/[0.09]" : "border-ebot-border/[0.12] bg-ebot-surfaceMuted/30 hover:border-ebot-primary/25 hover:bg-ebot-surface"
       )}
     >
       <div className="flex items-center gap-3">
-        <Avatar name={attendance.patientName} size="lg" status={attendance.status === "Aguardando" ? "busy" : "online"} />
+        <Avatar name={attendance.clientName} size="lg" status={attendance.status === "Aguardando" ? "busy" : "online"} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-extrabold text-clinical-dark">{attendance.patientName}</p>
+          <p className="truncate text-sm font-extrabold text-ebot-dark">{attendance.clientName}</p>
           <div className="mt-1 flex items-center gap-1.5">
             <ChannelIcon channel={attendance.channel} />
-            <span className="text-[11px] font-bold text-clinical-muted">{attendance.id} · {attendance.time}</span>
+            <span className="text-[11px] font-bold text-ebot-muted">{attendance.id} · {attendance.time}</span>
           </div>
         </div>
       </div>
-      <p className="mt-3 line-clamp-2 min-h-10 text-[13px] leading-5 text-clinical-slate">{attendance.lastMessage}</p>
+      <p className="mt-3 line-clamp-2 min-h-10 text-[13px] leading-5 text-ebot-slate">{attendance.lastMessage}</p>
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <StatusChip label={attendance.status} tone={statusTone[attendance.status]} />
         <PriorityBadge priority={attendance.priority} withChip />
-        <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-extrabold", attendance.source === "Humano" ? "bg-clinical-teal/10 text-clinical-teal" : "bg-clinical-blue/10 text-clinical-blueText")}>
+        <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-extrabold", attendance.source === "Humano" ? "bg-ebot-teal/10 text-ebot-teal" : "bg-ebot-primary/10 text-ebot-primaryText")}>
           <Bot className="size-3" />
           {attendance.source === "Humano" ? "Humano" : "IA"}
         </span>
         {attendance.unread > 0 ? (
-          <span className="flex size-5 items-center justify-center rounded-full bg-clinical-blue text-[10px] font-black text-clinical-charcoal">{attendance.unread}</span>
+          <span className="flex size-5 items-center justify-center rounded-full bg-ebot-primary text-[10px] font-black text-ebot-charcoal">{attendance.unread}</span>
         ) : null}
       </div>
     </button>
@@ -636,10 +614,10 @@ function AttendanceCard({ attendance, active, onSelect }: { attendance: Attendan
 
 function StatusChip({ label, tone }: { label: string; tone: "blue" | "orange" | "green" | "neutral" }) {
   const styles = {
-    blue: "bg-clinical-blue/10 text-clinical-blueText",
-    orange: "bg-clinical-orange/12 text-clinical-orange",
-    green: "bg-clinical-green/12 text-clinical-green",
-    neutral: "bg-clinical-surfaceMuted text-clinical-muted"
+    blue: "bg-ebot-primary/10 text-ebot-primaryText",
+    orange: "bg-ebot-orange/12 text-ebot-orange",
+    green: "bg-ebot-green/12 text-ebot-green",
+    neutral: "bg-ebot-surfaceMuted text-ebot-muted"
   }[tone];
   return <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-extrabold", styles)}>{label}</span>;
 }
@@ -686,10 +664,10 @@ function ChatPane({
     if (last && (last.from === "ai" || last.from === "human")) setTyping(false);
   }, [messages]);
 
-  const lastPatient = [...messages].reverse().find((message) => message.from === "patient");
+  const lastClient = [...messages].reverse().find((message) => message.from === "client");
   const lastReply = messages[messages.length - 1];
   const closed = attendance.status === "Encerrado";
-  const showSuggestion = !closed && Boolean(lastPatient && lastReply && lastReply.from !== "patient");
+  const showSuggestion = !closed && Boolean(lastClient && lastReply && lastReply.from !== "client");
   const online = attendance.status === "Em atendimento humano" || attendance.status === "Resolvido pela IA";
 
   function handleSend(message: ComposerMessage) {
@@ -700,15 +678,15 @@ function ChatPane({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3 border-b border-clinical-border/[0.12] bg-clinical-surfaceMuted/40 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-ebot-border/[0.12] bg-ebot-surfaceMuted/40 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <button type="button" onClick={onOpenProfile} className="flex min-w-0 items-center gap-3 rounded-2xl text-left focus:outline-none focus:ring-2 focus:ring-clinical-blue/25" aria-label={`Abrir perfil de ${attendance.patientName}`}>
-            <Avatar name={attendance.patientName} status={online ? "online" : "offline"} />
+          <button type="button" onClick={onOpenProfile} className="flex min-w-0 items-center gap-3 rounded-2xl text-left focus:outline-none focus:ring-2 focus:ring-ebot-primary/25" aria-label={`Abrir perfil de ${attendance.clientName}`}>
+            <Avatar name={attendance.clientName} status={online ? "online" : "offline"} />
             <span className="min-w-0">
-              <span className="block truncate text-sm font-extrabold text-clinical-dark">{attendance.patientName}</span>
-              <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-clinical-muted">
+              <span className="block truncate text-sm font-extrabold text-ebot-dark">{attendance.clientName}</span>
+              <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-ebot-muted">
                 <ChannelIcon channel={attendance.channel} />
-                <span className={cn(online && "text-clinical-green")}>{online ? "online" : "na fila"}</span>
+                <span className={cn(online && "text-ebot-green")}>{online ? "online" : "na fila"}</span>
                 <span aria-hidden="true">·</span>
                 <span>{attendance.id}</span>
               </span>
@@ -716,15 +694,15 @@ function ChatPane({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button type="button" onClick={onPhone} disabled={closed} className="hidden size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-40 sm:flex" aria-label="Ligar para o paciente" title={closed ? "Ação indisponível em atendimento encerrado" : "Ligar para o paciente"}><Phone className="size-4" /></button>
-          <button type="button" onClick={onVideo} disabled={closed} className="hidden size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-40 sm:flex" aria-label="Iniciar videochamada" title={closed ? "Ação indisponível em atendimento encerrado" : "Iniciar videochamada"}><Video className="size-4" /></button>
+          <button type="button" onClick={onPhone} disabled={closed} className="hidden size-9 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-ebot-surfaceMuted/70 hover:text-ebot-primary disabled:cursor-not-allowed disabled:opacity-40 sm:flex" aria-label="Ligar para o cliente" title={closed ? "Ação indisponível em atendimento encerrado" : "Ligar para o cliente"}><Phone className="size-4" /></button>
+          <button type="button" onClick={onVideo} disabled={closed} className="hidden size-9 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-ebot-surfaceMuted/70 hover:text-ebot-primary disabled:cursor-not-allowed disabled:opacity-40 sm:flex" aria-label="Iniciar videochamada" title={closed ? "Ação indisponível em atendimento encerrado" : "Iniciar videochamada"}><Video className="size-4" /></button>
           <div className="relative">
-            <button type="button" onClick={() => setMenuOpen((current) => !current)} aria-expanded={menuOpen} aria-haspopup="menu" className="flex size-9 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted/70 hover:text-clinical-blue" aria-label="Mais opções"><MoreVertical className="size-4" /></button>
+            <button type="button" onClick={() => setMenuOpen((current) => !current)} aria-expanded={menuOpen} aria-haspopup="menu" className="flex size-9 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-ebot-surfaceMuted/70 hover:text-ebot-primary" aria-label="Mais opções"><MoreVertical className="size-4" /></button>
             {menuOpen ? (
-              <div role="menu" className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface p-2 shadow-clinical">
-                <button type="button" role="menuitem" onClick={() => { onMenuAction("unread"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-slate transition hover:bg-clinical-blue/[0.08] hover:text-clinical-blue">Marcar como não lido</button>
-                <button type="button" role="menuitem" onClick={() => { onMenuAction("profile"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-slate transition hover:bg-clinical-blue/[0.08] hover:text-clinical-blue">Abrir perfil do paciente</button>
-                <button type="button" role="menuitem" onClick={() => { onMenuAction("id"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-slate transition hover:bg-clinical-blue/[0.08] hover:text-clinical-blue">Ver identificação do atendimento</button>
+              <div role="menu" className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-ebot-border/[0.14] bg-ebot-surface p-2 shadow-ebot">
+                <button type="button" role="menuitem" onClick={() => { onMenuAction("unread"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-ebot-slate transition hover:bg-ebot-primary/[0.08] hover:text-ebot-primary">Marcar como não lido</button>
+                <button type="button" role="menuitem" onClick={() => { onMenuAction("profile"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-ebot-slate transition hover:bg-ebot-primary/[0.08] hover:text-ebot-primary">Abrir perfil do cliente</button>
+                <button type="button" role="menuitem" onClick={() => { onMenuAction("id"); setMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-xs font-bold text-ebot-slate transition hover:bg-ebot-primary/[0.08] hover:text-ebot-primary">Ver identificação do atendimento</button>
               </div>
             ) : null}
           </div>
@@ -733,28 +711,28 @@ function ChatPane({
           ) : attendance.source !== "Humano" ? (
             <Button type="button" size="sm" onClick={onAssume}><UserRoundCheck className="size-4" />Assumir</Button>
           ) : null}
-          <button type="button" onClick={onTransfer} disabled={closed} className="flex size-9 items-center justify-center rounded-xl border border-clinical-border/[0.12] text-clinical-muted transition hover:border-clinical-blue/25 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-40" aria-label="Transferir atendimento" title={closed ? "Ação indisponível em atendimento encerrado" : "Transferir atendimento"}>
+          <button type="button" onClick={onTransfer} disabled={closed} className="flex size-9 items-center justify-center rounded-xl border border-ebot-border/[0.12] text-ebot-muted transition hover:border-ebot-primary/25 hover:text-ebot-primary disabled:cursor-not-allowed disabled:opacity-40" aria-label="Transferir atendimento" title={closed ? "Ação indisponível em atendimento encerrado" : "Transferir atendimento"}>
             <Send className="size-4" />
           </button>
-          <button type="button" onClick={onClose} disabled={closed} className="flex size-9 items-center justify-center rounded-xl border border-clinical-border/[0.12] text-clinical-muted transition hover:border-red-500/40 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Encerrar atendimento" title={closed ? "Atendimento já encerrado" : "Encerrar atendimento"}>
+          <button type="button" onClick={onClose} disabled={closed} className="flex size-9 items-center justify-center rounded-xl border border-ebot-border/[0.12] text-ebot-muted transition hover:border-red-500/40 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Encerrar atendimento" title={closed ? "Atendimento já encerrado" : "Encerrar atendimento"}>
             <Check className="size-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-b border-clinical-border/[0.10] bg-clinical-surfaceMuted/25 px-4 py-2">
+      <div className="flex items-center justify-between gap-2 border-b border-ebot-border/[0.10] bg-ebot-surfaceMuted/25 px-4 py-2">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <StatusChip label={attendance.status} tone={statusTone[attendance.status]} />
           <PriorityBadge priority={attendance.priority} />
-          <span className="truncate text-[11px] font-bold text-clinical-muted">{attendance.queue}</span>
+          <span className="truncate text-[11px] font-bold text-ebot-muted">{attendance.queue}</span>
         </div>
-        <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-bold text-clinical-muted">
-          <Timer className="size-3.5 text-clinical-blue" />{attendance.duration}
+        <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-bold text-ebot-muted">
+          <Timer className="size-3.5 text-ebot-primary" />{attendance.duration}
         </span>
       </div>
 
-      <div ref={scrollRef} className="chat-dots clinical-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4 max-h-[calc(100dvh-250px)] md:max-h-none">
-        <div className="flex justify-center"><span className="rounded-full bg-clinical-surfaceMuted/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Hoje</span></div>
+      <div ref={scrollRef} className="chat-dots ebot-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4 max-h-[calc(100dvh-250px)] md:max-h-none">
+        <div className="flex justify-center"><span className="rounded-full bg-ebot-surfaceMuted/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Hoje</span></div>
         {messages.map((message) => (
           <AttendanceBubble key={message.id} message={message} />
         ))}
@@ -767,9 +745,9 @@ function ChatPane({
         ) : null}
       </div>
 
-       <div className="relative border-t border-clinical-border/[0.12]">
+       <div className="relative border-t border-ebot-border/[0.12]">
          {closed ? (
-           <div className="flex items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-clinical-muted">
+           <div className="flex items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-ebot-muted">
              <span>Este atendimento está encerrado e não aceita novas mensagens.</span>
              <Button type="button" size="sm" variant="secondary" onClick={onReopen}>Reabrir atendimento</Button>
            </div>
@@ -782,7 +760,7 @@ function ChatPane({
                  aria-label="Respostas rápidas"
                  aria-expanded={quickOpen}
                  onClick={() => setQuickOpen((current) => !current)}
-                 className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border transition", quickOpen ? "border-clinical-orange/30 bg-clinical-orange/10 text-clinical-orange" : "border-clinical-border/[0.12] text-clinical-muted hover:border-clinical-blue/25 hover:text-clinical-blue")}
+                 className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border transition", quickOpen ? "border-ebot-orange/30 bg-ebot-orange/10 text-ebot-orange" : "border-ebot-border/[0.12] text-ebot-muted hover:border-ebot-primary/25 hover:text-ebot-primary")}
                >
                  <MessageSquareText className="size-4" />
                </button>
@@ -803,31 +781,31 @@ function AttendanceBubble({ message }: { message: StoredMessage }) {
     <div className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
       <div
         className={cn(
-          "relative max-w-[85%] rounded-[14px] px-3.5 py-2.5 text-sm leading-6 shadow-[0_1px_1px_rgba(38,53,50,0.06)]",
+          "relative max-w-[85%] rounded-[14px] px-3.5 py-2.5 text-sm leading-6 shadow-[0_1px_1px_rgba(4,27,21,0.06)]",
           mine
-            ? "rounded-tr-[4px] bg-clinical-whatsapp/15 text-clinical-dark"
+            ? "rounded-tr-[4px] bg-ebot-whatsapp/15 text-ebot-dark"
             : isAi
-              ? "rounded-tl-[4px] border border-clinical-blue/20 bg-clinical-blue/[0.07] text-clinical-slate"
+              ? "rounded-tl-[4px] border border-ebot-primary/20 bg-ebot-primary/[0.07] text-ebot-slate"
               : isHuman
-                ? "rounded-tl-[4px] border border-clinical-teal/20 bg-clinical-teal/[0.08] text-clinical-slate"
-                : "rounded-tl-[4px] border border-clinical-border/[0.10] bg-clinical-surface text-clinical-slate"
+                ? "rounded-tl-[4px] border border-ebot-teal/20 bg-ebot-teal/[0.08] text-ebot-slate"
+                : "rounded-tl-[4px] border border-ebot-border/[0.10] bg-ebot-surface text-ebot-slate"
         )}
       >
         {mine ? (
-          <span aria-hidden="true" className="absolute -bottom-px -right-[6px] size-0 border-b-[10px] border-l-[10px] border-b-clinical-whatsapp/15 border-l-transparent" />
+          <span aria-hidden="true" className="absolute -bottom-px -right-[6px] size-0 border-b-[10px] border-l-[10px] border-b-ebot-whatsapp/15 border-l-transparent" />
         ) : null}
         {!mine && !isAi && !isHuman ? (
-          <span aria-hidden="true" className="absolute -bottom-px -left-[6px] size-0 border-b-[10px] border-r-[10px] border-b-clinical-surface border-r-transparent" />
+          <span aria-hidden="true" className="absolute -bottom-px -left-[6px] size-0 border-b-[10px] border-r-[10px] border-b-ebot-surface border-r-transparent" />
         ) : null}
         {(isAi || isHuman) ? (
           <p className="mb-1 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em]">
-            {isAi ? <><Bot className="size-3.5 text-clinical-blue" /><span className="text-clinical-blueText">IA</span></> : <><UserRoundCheck className="size-3.5 text-clinical-teal" /><span className="text-clinical-teal">Equipe</span></>}
+            {isAi ? <><Bot className="size-3.5 text-ebot-primary" /><span className="text-ebot-primaryText">IA</span></> : <><UserRoundCheck className="size-3.5 text-ebot-teal" /><span className="text-ebot-teal">Equipe</span></>}
           </p>
         ) : null}
         <p className="break-words">{message.text}</p>
         <span className="mt-1 flex items-center justify-end gap-1 text-[10px] font-semibold opacity-60">
           {message.time}
-          {mine ? <CheckCheck className="size-3.5 text-clinical-blue" /> : null}
+          {mine ? <CheckCheck className="size-3.5 text-ebot-primary" /> : null}
         </span>
       </div>
     </div>
@@ -837,35 +815,35 @@ function AttendanceBubble({ message }: { message: StoredMessage }) {
 function TypingBubble() {
   return (
     <div className="flex items-end">
-      <div className="relative rounded-[14px] rounded-tl-[4px] border border-clinical-border/[0.10] bg-clinical-surface px-4 py-3.5 shadow-[0_1px_1px_rgba(38,53,50,0.06)]">
+      <div className="relative rounded-[14px] rounded-tl-[4px] border border-ebot-border/[0.10] bg-ebot-surface px-4 py-3.5 shadow-[0_1px_1px_rgba(4,27,21,0.06)]">
         <span className="flex items-center gap-1" role="status" aria-label="A IA está digitando">
-          <span className="size-1.5 animate-bounce rounded-full bg-clinical-muted" style={{ animationDelay: "0ms" }} />
-          <span className="size-1.5 animate-bounce rounded-full bg-clinical-muted" style={{ animationDelay: "120ms" }} />
-          <span className="size-1.5 animate-bounce rounded-full bg-clinical-muted" style={{ animationDelay: "240ms" }} />
+          <span className="size-1.5 animate-bounce rounded-full bg-ebot-muted" style={{ animationDelay: "0ms" }} />
+          <span className="size-1.5 animate-bounce rounded-full bg-ebot-muted" style={{ animationDelay: "120ms" }} />
+          <span className="size-1.5 animate-bounce rounded-full bg-ebot-muted" style={{ animationDelay: "240ms" }} />
         </span>
       </div>
     </div>
   );
 }
 
-function PatientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendance: StoredAttendance; onOpenProfile: () => void; onAddNote: () => void }) {
+function ClientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendance: StoredAttendance; onOpenProfile: () => void; onAddNote: () => void }) {
   return (
-    <div className="clinical-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
-      <div className="flex flex-col items-center rounded-2xl bg-clinical-blue/[0.07] p-4 text-center">
-        <Avatar name={attendance.patientName} size="xl" />
-        <p className="mt-3 text-base font-extrabold text-clinical-dark">{attendance.patientName}</p>
-        <p className="mt-0.5 text-xs font-bold text-clinical-muted">{attendance.phone}</p>
+    <div className="ebot-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
+      <div className="flex flex-col items-center rounded-2xl bg-ebot-primary/[0.07] p-4 text-center">
+        <Avatar name={attendance.clientName} size="xl" />
+        <p className="mt-3 text-base font-extrabold text-ebot-dark">{attendance.clientName}</p>
+        <p className="mt-0.5 text-xs font-bold text-ebot-muted">{attendance.phone}</p>
         <div className="mt-2 flex flex-wrap justify-center gap-1.5">
           <StatusChip label={attendance.status} tone={statusTone[attendance.status]} />
           <PriorityBadge priority={attendance.priority} withChip />
         </div>
         <Button type="button" size="sm" variant="secondary" className="mt-4" onClick={onOpenProfile}>
-          <UserRoundCheck className="size-4" />Ver paciente
+          <UserRoundCheck className="size-4" />Ver cliente
         </Button>
       </div>
 
       <dl className="mt-5 space-y-4">
-        <ProfileField icon={Headphones} label="Unidade" value={attendance.unit} />
+        <ProfileField icon={Headphones} label="Filial" value={attendance.unit} />
         <ProfileField icon={List} label="Fila" value={attendance.queue} />
         <ProfileField icon={UserRoundCheck} label="Responsável" value={attendance.responsible} />
         <ProfileField icon={Bot} label="Automação" value={attendance.source} />
@@ -873,17 +851,17 @@ function PatientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendan
 
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-extrabold text-clinical-dark">Observações</h3>
-          <button type="button" onClick={onAddNote} className="flex items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-extrabold text-clinical-blue transition hover:bg-clinical-blue/10" aria-label="Adicionar observação">
+          <h3 className="text-sm font-extrabold text-ebot-dark">Observações</h3>
+          <button type="button" onClick={onAddNote} className="flex items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-extrabold text-ebot-primary transition hover:bg-ebot-primary/10" aria-label="Adicionar observação">
             <StickyNote className="size-3.5" />Adicionar
           </button>
         </div>
         <div className="space-y-2">
-          <p className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3 text-[13px] leading-5 text-clinical-slate">
-            Paciente recorrente da clínica. Prefere contato pelo WhatsApp e horários pela manhã.
+          <p className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-3 text-[13px] leading-5 text-ebot-slate">
+            Cliente recorrente da empresa. Prefere contato pelo WhatsApp e horários pela manhã.
           </p>
           {(attendance.notes ?? []).map((note, index) => (
-            <p key={`${attendance.id}-note-${index}`} className="rounded-2xl border border-clinical-orange/15 bg-clinical-orange/[0.06] p-3 text-[13px] leading-5 text-clinical-slate">
+            <p key={`${attendance.id}-note-${index}`} className="rounded-2xl border border-ebot-orange/15 bg-ebot-orange/[0.06] p-3 text-[13px] leading-5 text-ebot-slate">
               {note}
             </p>
           ))}
@@ -891,17 +869,17 @@ function PatientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendan
       </div>
 
       <div className="mt-5">
-        <h3 className="mb-3 text-sm font-extrabold text-clinical-dark">Histórico resumido</h3>
+        <h3 className="mb-3 text-sm font-extrabold text-ebot-dark">Histórico resumido</h3>
         <Timeline
           items={[
             { id: "h1", icon: MessageSquareText, title: attendance.lastMessage, subtitle: attendance.channel, date: attendance.time, tone: "blue" },
-            { id: "h2", icon: UserRoundCheck, title: "Atendimento em fila de retorno", subtitle: "Recepção acompanhou o caso", date: "Ontem", tone: "green" },
+            { id: "h2", icon: UserRoundCheck, title: "Atendimento em fila de retorno", subtitle: "Atendimento acompanhou o caso", date: "Ontem", tone: "green" },
             { id: "h3", icon: Bot, title: "Primeiro contato resolvido pela IA", subtitle: "Agendamento via WhatsApp", date: "12 jul", tone: "neutral" }
           ]}
         />
       </div>
 
-      <button type="button" onClick={onAddNote} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-clinical-blue/30 py-3 text-[13px] font-extrabold text-clinical-blueText transition hover:bg-clinical-blue/[0.07]">
+      <button type="button" onClick={onAddNote} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-ebot-primary/30 py-3 text-[13px] font-extrabold text-ebot-primaryText transition hover:bg-ebot-primary/[0.07]">
         <StickyNote className="size-4" />Adicionar observação interna
       </button>
     </div>
@@ -911,10 +889,10 @@ function PatientProfilePane({ attendance, onOpenProfile, onAddNote }: { attendan
 function ProfileField({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-surfaceMuted text-clinical-blue"><Icon className="size-4" /></span>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ebot-surfaceMuted text-ebot-primary"><Icon className="size-4" /></span>
       <div className="min-w-0">
-        <dt className="text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">{label}</dt>
-        <dd className="truncate text-sm font-bold text-clinical-dark">{value}</dd>
+        <dt className="text-[11px] font-extrabold uppercase tracking-wider text-ebot-muted">{label}</dt>
+        <dd className="truncate text-sm font-bold text-ebot-dark">{value}</dd>
       </div>
     </div>
   );

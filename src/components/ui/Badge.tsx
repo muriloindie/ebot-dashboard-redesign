@@ -5,12 +5,12 @@ type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
 };
 
 const tones = {
-  blue: "border-clinical-blue/20 bg-clinical-blue/10 text-clinical-blueText",
-  green: "border-clinical-green/25 bg-clinical-green/10 text-clinical-green",
-  orange: "border-clinical-orange/25 bg-clinical-orange/10 text-clinical-orange",
-  teal: "border-clinical-teal/25 bg-clinical-teal/10 text-clinical-teal",
-  dark: "border-clinical-border/[0.15] bg-clinical-surfaceMuted text-clinical-dark",
-  whatsapp: "border-clinical-whatsapp/25 bg-clinical-whatsapp/10 text-clinical-whatsapp"
+  blue: "border-ebot-primary/20 bg-ebot-primary/10 text-ebot-primaryText",
+  green: "border-ebot-green/25 bg-ebot-green/10 text-ebot-green",
+  orange: "border-ebot-orange/25 bg-ebot-orange/10 text-ebot-orange",
+  teal: "border-ebot-teal/25 bg-ebot-teal/10 text-ebot-teal",
+  dark: "border-ebot-border/[0.15] bg-ebot-surfaceMuted text-ebot-dark",
+  whatsapp: "border-ebot-whatsapp/25 bg-ebot-whatsapp/10 text-ebot-whatsapp"
 };
 
 export function Badge({ className, tone = "blue", ...props }: BadgeProps) {

@@ -56,19 +56,19 @@ type EbotNodeData = { node: FlowNode; executionStatus?: "success" | "error" | "s
 type EbotRfNode = Node<EbotNodeData, "ebot">;
 
 const toneStyles = {
-  blue: "bg-clinical-blue/[0.10] text-clinical-blue",
-  green: "bg-clinical-green/[0.12] text-clinical-green",
-  orange: "bg-clinical-orange/[0.12] text-clinical-orange",
-  teal: "bg-clinical-teal/[0.12] text-clinical-teal",
-  red: "bg-clinical-red/[0.12] text-clinical-red"
+  blue: "bg-ebot-primary/[0.10] text-ebot-primary",
+  green: "bg-ebot-green/[0.12] text-ebot-green",
+  orange: "bg-ebot-orange/[0.12] text-ebot-orange",
+  teal: "bg-ebot-teal/[0.12] text-ebot-teal",
+  red: "bg-ebot-red/[0.12] text-ebot-red"
 } as const;
 
 const minimapColors: Record<string, string> = {
-  blue: "#3a9dca",
-  green: "#87a630",
-  orange: "#f19d18",
-  teal: "#30a3a4",
-  red: "#cd4c4c"
+  blue: "#6B942E",
+  green: "#6B942E",
+  orange: "#C97F12",
+  teal: "#408B78",
+  red: "#C13E3E"
 };
 
 function uid(prefix: string) {
@@ -86,40 +86,40 @@ function EbotNode({ data, selected }: NodeProps<EbotRfNode>) {
   return (
     <div
       className={cn(
-        "w-56 rounded-2xl border bg-clinical-surface shadow-[0_10px_28px_rgba(38,53,50,0.10)] transition",
-        selected ? "border-clinical-blue ring-2 ring-clinical-blue/25" : "border-clinical-border/[0.18]",
-        execution === "success" && "border-clinical-green/60 ring-2 ring-clinical-green/20",
-        execution === "error" && "border-clinical-red/60 ring-2 ring-clinical-red/20",
+        "w-56 rounded-2xl border bg-ebot-surface shadow-[0_10px_28px_rgba(4,27,21,0.10)] transition",
+        selected ? "border-ebot-primary ring-2 ring-ebot-primary/25" : "border-ebot-border/[0.18]",
+        execution === "success" && "border-ebot-green/60 ring-2 ring-ebot-green/20",
+        execution === "error" && "border-ebot-red/60 ring-2 ring-ebot-red/20",
         execution === "skipped" && "opacity-55",
         flowNode.disabled && "opacity-50"
       )}
     >
-      <Handle type="target" position={Position.Left} className="!size-3 !border-2 !border-clinical-surface !bg-clinical-blue" />
+      <Handle type="target" position={Position.Left} className="!size-3 !border-2 !border-ebot-surface !bg-ebot-primary" />
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl", toneStyles[visual.tone])}>
           <Icon className="size-4" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-extrabold leading-4 text-clinical-dark">{flowNode.name}</span>
-          <span className="mt-0.5 flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">
+          <span className="block truncate text-[13px] font-extrabold leading-4 text-ebot-dark">{flowNode.name}</span>
+          <span className="mt-0.5 flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">
             {visual.label}
-            {execution === "success" ? <span className="text-clinical-green">· ok</span> : null}
-            {execution === "error" ? <span className="text-clinical-red">· erro</span> : null}
+            {execution === "success" ? <span className="text-ebot-green">· ok</span> : null}
+            {execution === "error" ? <span className="text-ebot-red">· erro</span> : null}
           </span>
         </span>
       </div>
       {flowNode.parameters && typeof flowNode.parameters.text === "string" && flowNode.parameters.text ? (
-        <p className="line-clamp-2 border-t border-clinical-border/[0.10] px-3 py-2 text-[11px] font-semibold leading-4 text-clinical-muted">{String(flowNode.parameters.text)}</p>
+        <p className="line-clamp-2 border-t border-ebot-border/[0.10] px-3 py-2 text-[11px] font-semibold leading-4 text-ebot-muted">{String(flowNode.parameters.text)}</p>
       ) : null}
       {definition && isCondition ? (
         <>
-          <Handle id="true" type="source" position={Position.Right} style={{ top: "32%" }} className="!size-3 !border-2 !border-clinical-surface !bg-clinical-green" />
-          <Handle id="false" type="source" position={Position.Right} style={{ top: "68%" }} className="!size-3 !border-2 !border-clinical-surface !bg-clinical-red" />
-          <span className="absolute -right-8 top-[26%] text-[10px] font-extrabold text-clinical-green">sim</span>
-          <span className="absolute -right-7 top-[62%] text-[10px] font-extrabold text-clinical-red">não</span>
+          <Handle id="true" type="source" position={Position.Right} style={{ top: "32%" }} className="!size-3 !border-2 !border-ebot-surface !bg-ebot-green" />
+          <Handle id="false" type="source" position={Position.Right} style={{ top: "68%" }} className="!size-3 !border-2 !border-ebot-surface !bg-ebot-red" />
+          <span className="absolute -right-8 top-[26%] text-[10px] font-extrabold text-ebot-green">sim</span>
+          <span className="absolute -right-7 top-[62%] text-[10px] font-extrabold text-ebot-red">não</span>
         </>
       ) : (
-        <Handle type="source" position={Position.Right} className="!size-3 !border-2 !border-clinical-surface !bg-clinical-blue" />
+        <Handle type="source" position={Position.Right} className="!size-3 !border-2 !border-ebot-surface !bg-ebot-primary" />
       )}
     </div>
   );
@@ -366,9 +366,9 @@ function EditorInner({ id }: { id: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/80 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/80 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <button type="button" onClick={handleBack} aria-label="Voltar para fluxos de automação" className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-clinical-border/[0.12] text-clinical-muted transition hover:border-clinical-blue/30 hover:text-clinical-blue">
+          <button type="button" onClick={handleBack} aria-label="Voltar para fluxos de automação" className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-ebot-border/[0.12] text-ebot-muted transition hover:border-ebot-primary/30 hover:text-ebot-primary">
             <ArrowLeft className="size-4" />
           </button>
           <div className="min-w-0">
@@ -376,22 +376,22 @@ function EditorInner({ id }: { id: string }) {
               value={name}
               onChange={(event) => { setName(event.target.value); setDirty(true); }}
               aria-label="Nome do fluxo"
-              className="w-full min-w-[200px] truncate rounded-xl bg-transparent text-lg font-extrabold tracking-tight text-clinical-dark outline-none focus:bg-clinical-surfaceMuted/60 focus:px-2"
+              className="w-full min-w-[200px] truncate rounded-xl bg-transparent text-lg font-extrabold tracking-tight text-ebot-dark outline-none focus:bg-ebot-surfaceMuted/60 focus:px-2"
             />
-            <p className="flex items-center gap-2 px-0.5 text-[11px] font-extrabold text-clinical-muted">
-              <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5", status === "active" ? "bg-clinical-green/[0.12] text-clinical-green" : status === "paused" ? "bg-clinical-orange/[0.12] text-clinical-orange" : "bg-clinical-blue/[0.10] text-clinical-blueText")}>
-                <span className={cn("size-1.5 rounded-full", status === "active" ? "bg-clinical-green" : status === "paused" ? "bg-clinical-orange" : "bg-clinical-blue")} />
+            <p className="flex items-center gap-2 px-0.5 text-[11px] font-extrabold text-ebot-muted">
+              <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5", status === "active" ? "bg-ebot-green/[0.12] text-ebot-green" : status === "paused" ? "bg-ebot-orange/[0.12] text-ebot-orange" : "bg-ebot-primary/[0.10] text-ebot-primaryText")}>
+                <span className={cn("size-1.5 rounded-full", status === "active" ? "bg-ebot-green" : status === "paused" ? "bg-ebot-orange" : "bg-ebot-primary")} />
                 {status === "active" ? "Ativo" : status === "paused" ? "Pausado" : "Rascunho"}
               </span>
               {workflow.protocolName ? <span>· {workflow.protocolName}</span> : null}
               <span>· {channel}</span>
-              {dirty ? <span className="text-clinical-orange">· alterações não salvas</span> : null}
+              {dirty ? <span className="text-ebot-orange">· alterações não salvas</span> : null}
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="secondary" onClick={() => setPaletteOpen(true)} className="md:hidden"><Plus className="size-4" />Nó</Button>
-          <Button size="sm" variant="secondary" onClick={() => { setLogsOpen(true); }}><History className="size-4" />Logs{execution ? <span className="ml-1 rounded-full bg-clinical-blue/20 px-1.5 text-[10px]">1 novo</span> : null}</Button>
+          <Button size="sm" variant="secondary" onClick={() => { setLogsOpen(true); }}><History className="size-4" />Logs{execution ? <span className="ml-1 rounded-full bg-ebot-primary/20 px-1.5 text-[10px]">1 novo</span> : null}</Button>
           <Button size="sm" variant="secondary" onClick={() => setSettingsOpen(true)}><Settings2 className="size-4" />Configurações</Button>
           {execution ? <Button size="sm" variant="ghost" onClick={clearExecution}><X className="size-4" />Limpar teste</Button> : null}
           <Button size="sm" variant="secondary" onClick={handleTest}><Zap className="size-4" />Testar fluxo</Button>
@@ -403,15 +403,15 @@ function EditorInner({ id }: { id: string }) {
       </div>
 
       <div ref={wrapperRef} className="flex h-[calc(100dvh-210px)] min-h-[480px] gap-3">
-        <aside className="hidden w-60 shrink-0 flex-col overflow-hidden rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/80 md:flex">
-          <div className="border-b border-clinical-border/[0.12] px-3 py-3">
-            <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-clinical-muted"><Sparkles className="size-3.5 text-clinical-blue" />Paleta de nós</p>
-            <p className="mt-1 text-[11px] font-semibold text-clinical-muted">Arraste para o canvas ou clique para adicionar.</p>
+        <aside className="hidden w-60 shrink-0 flex-col overflow-hidden rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/80 md:flex">
+          <div className="border-b border-ebot-border/[0.12] px-3 py-3">
+            <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-ebot-muted"><Sparkles className="size-3.5 text-ebot-primary" />Paleta de nós</p>
+            <p className="mt-1 text-[11px] font-semibold text-ebot-muted">Arraste para o canvas ou clique para adicionar.</p>
           </div>
-          <div className="clinical-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
+          <div className="ebot-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
             {paletteKinds.map((group) => (
               <div key={group.kind} className="mb-3">
-                <p className="px-2 pb-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-clinical-muted">{nodeKindLabels[group.kind]}</p>
+                <p className="px-2 pb-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-ebot-muted">{nodeKindLabels[group.kind]}</p>
                 <div className="space-y-1">
                   {group.items.map((definition) => {
                     const visual = getNodeVisual(definition.type);
@@ -423,12 +423,12 @@ function EditorInner({ id }: { id: string }) {
                         draggable
                         onDragStart={(event) => event.dataTransfer.setData("application/ebot-node", definition.type)}
                         onClick={() => addNode(definition.type)}
-                        className="flex w-full items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left transition hover:border-clinical-blue/25 hover:bg-clinical-blue/[0.06]"
+                        className="flex w-full items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left transition hover:border-ebot-primary/25 hover:bg-ebot-primary/[0.06]"
                         title={definition.description}
                       >
-                        <GripVertical className="size-3.5 shrink-0 text-clinical-muted/50" />
+                        <GripVertical className="size-3.5 shrink-0 text-ebot-muted/50" />
                         <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", toneStyles[visual.tone])}><Icon className="size-4" /></span>
-                        <span className="truncate text-[12px] font-extrabold text-clinical-dark">{definition.label}</span>
+                        <span className="truncate text-[12px] font-extrabold text-ebot-dark">{definition.label}</span>
                       </button>
                     );
                   })}
@@ -438,7 +438,7 @@ function EditorInner({ id }: { id: string }) {
           </div>
         </aside>
 
-        <section className="relative min-w-0 flex-1 overflow-hidden rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/60">
+        <section className="relative min-w-0 flex-1 overflow-hidden rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/60">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -467,44 +467,44 @@ function EditorInner({ id }: { id: string }) {
               position="bottom-right"
               nodeColor={(node) => {
                 const visual = getNodeVisual((node.data as EbotNodeData).node.type);
-                return minimapColors[visual.tone] ?? "#3a9dca";
+                return minimapColors[visual.tone] ?? "#6B942E";
               }}
-              className="!bg-clinical-surface/90"
+              className="!bg-ebot-surface/90"
             />
           </ReactFlow>
 
           {selectedNode && selectedDefinition ? (
-            <div className="absolute bottom-3 right-3 top-3 z-10 flex w-[320px] max-w-[calc(100%-24px)] flex-col overflow-hidden rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface shadow-clinical">
-              <div className="flex items-start justify-between gap-2 border-b border-clinical-border/[0.12] px-4 py-3">
+            <div className="absolute bottom-3 right-3 top-3 z-10 flex w-[320px] max-w-[calc(100%-24px)] flex-col overflow-hidden rounded-2xl border border-ebot-border/[0.14] bg-ebot-surface shadow-ebot">
+              <div className="flex items-start justify-between gap-2 border-b border-ebot-border/[0.12] px-4 py-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-clinical-blueText">{selectedDefinition.label}</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-ebot-primaryText">{selectedDefinition.label}</p>
                   <input
                     value={selectedNode.data.node.name}
                     onChange={(event) => updateSelectedNode({ name: event.target.value })}
                     aria-label="Nome do nó"
-                    className="mt-0.5 w-full rounded-lg bg-transparent text-sm font-extrabold text-clinical-dark outline-none focus:bg-clinical-surfaceMuted/60 focus:px-1.5"
+                    className="mt-0.5 w-full rounded-lg bg-transparent text-sm font-extrabold text-ebot-dark outline-none focus:bg-ebot-surfaceMuted/60 focus:px-1.5"
                   />
                 </div>
-                <button type="button" onClick={() => setSelectedNodeId(null)} aria-label="Fechar painel do nó" className="flex size-8 shrink-0 items-center justify-center rounded-xl text-clinical-muted transition hover:bg-clinical-surfaceMuted hover:text-clinical-dark"><X className="size-4" /></button>
+                <button type="button" onClick={() => setSelectedNodeId(null)} aria-label="Fechar painel do nó" className="flex size-8 shrink-0 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-ebot-surfaceMuted hover:text-ebot-dark"><X className="size-4" /></button>
               </div>
-              <div className="clinical-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
-                <p className="text-xs font-semibold leading-5 text-clinical-muted">{selectedDefinition.description}</p>
+              <div className="ebot-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
+                <p className="text-xs font-semibold leading-5 text-ebot-muted">{selectedDefinition.description}</p>
                 {selectedDefinition.fields.map((field) => {
                   const value = selectedNode.data.node.parameters[field.key];
                   if (field.type === "toggle") {
                     const active = Boolean(value);
                     return (
-                      <button key={field.key} type="button" onClick={() => updateSelectedNode({ parameters: { ...selectedNode.data.node.parameters, [field.key]: !active } })} className="flex w-full items-center justify-between gap-3 rounded-xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 px-3 py-2.5 text-left">
-                        <span className="text-[13px] font-extrabold text-clinical-dark">{field.label}</span>
-                        <span className={cn("flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition", active ? "justify-end bg-clinical-blue" : "justify-start bg-clinical-border/[0.25]")}><span className="size-4 rounded-full bg-white shadow-sm" /></span>
+                      <button key={field.key} type="button" onClick={() => updateSelectedNode({ parameters: { ...selectedNode.data.node.parameters, [field.key]: !active } })} className="flex w-full items-center justify-between gap-3 rounded-xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 px-3 py-2.5 text-left">
+                        <span className="text-[13px] font-extrabold text-ebot-dark">{field.label}</span>
+                        <span className={cn("flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition", active ? "justify-end bg-ebot-primary" : "justify-start bg-ebot-border/[0.25]")}><span className="size-4 rounded-full bg-white shadow-sm" /></span>
                       </button>
                     );
                   }
                   if (field.type === "select") {
                     return (
                       <label key={field.key} className="block">
-                        <span className="mb-1 block text-xs font-extrabold text-clinical-dark">{field.label}</span>
-                        <select value={String(value ?? "")} onChange={(event) => updateSelectedNode({ parameters: { ...selectedNode.data.node.parameters, [field.key]: event.target.value } })} className="h-10 w-full rounded-xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-2.5 text-[13px] font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
+                        <span className="mb-1 block text-xs font-extrabold text-ebot-dark">{field.label}</span>
+                        <select value={String(value ?? "")} onChange={(event) => updateSelectedNode({ parameters: { ...selectedNode.data.node.parameters, [field.key]: event.target.value } })} className="h-10 w-full rounded-xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-2.5 text-[13px] font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
                           {(field.options ?? []).map((option) => <option key={option}>{option}</option>)}
                         </select>
                       </label>
@@ -513,22 +513,22 @@ function EditorInner({ id }: { id: string }) {
                   if (field.type === "textarea") {
                     return (
                       <label key={field.key} className="block">
-                        <span className="mb-1 block text-xs font-extrabold text-clinical-dark">{field.label}</span>
-                        <textarea value={String(value ?? "")} onChange={(event) => updateSelectedNode({ parameters: { ...selectedNode.data.node.parameters, [field.key]: event.target.value } })} placeholder={field.placeholder} rows={4} className="w-full resize-y rounded-xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 p-2.5 text-[13px] font-semibold text-clinical-dark outline-none placeholder:text-clinical-muted/60 focus:border-clinical-blue/45" />
+                        <span className="mb-1 block text-xs font-extrabold text-ebot-dark">{field.label}</span>
+                        <textarea value={String(value ?? "")} onChange={(event) => updateSelectedNode({ parameters: { ...selectedNode.data.node.parameters, [field.key]: event.target.value } })} placeholder={field.placeholder} rows={4} className="w-full resize-y rounded-xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 p-2.5 text-[13px] font-semibold text-ebot-dark outline-none placeholder:text-ebot-muted/60 focus:border-ebot-primary/45" />
                       </label>
                     );
                   }
                   return (
                     <label key={field.key} className="block">
-                      <span className="mb-1 block text-xs font-extrabold text-clinical-dark">{field.label}</span>
-                      <input value={String(value ?? "")} onChange={(event) => updateSelectedNode({ parameters: { ...selectedNode.data.node.parameters, [field.key]: event.target.value } })} placeholder={field.placeholder} className="h-10 w-full rounded-xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-2.5 text-[13px] font-semibold text-clinical-dark outline-none placeholder:text-clinical-muted/60 focus:border-clinical-blue/45" />
+                      <span className="mb-1 block text-xs font-extrabold text-ebot-dark">{field.label}</span>
+                      <input value={String(value ?? "")} onChange={(event) => updateSelectedNode({ parameters: { ...selectedNode.data.node.parameters, [field.key]: event.target.value } })} placeholder={field.placeholder} className="h-10 w-full rounded-xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-2.5 text-[13px] font-semibold text-ebot-dark outline-none placeholder:text-ebot-muted/60 focus:border-ebot-primary/45" />
                     </label>
                   );
                 })}
               </div>
-              <div className="flex gap-2 border-t border-clinical-border/[0.12] px-4 py-3">
+              <div className="flex gap-2 border-t border-ebot-border/[0.12] px-4 py-3">
                 <Button size="sm" variant="secondary" className="flex-1" onClick={duplicateSelectedNode}><Copy className="size-3.5" />Duplicar</Button>
-                <Button size="sm" variant="secondary" className="flex-1 text-clinical-red" onClick={deleteSelectedNode}><Trash2 className="size-3.5" />Excluir</Button>
+                <Button size="sm" variant="secondary" className="flex-1 text-ebot-red" onClick={deleteSelectedNode}><Trash2 className="size-3.5" />Excluir</Button>
               </div>
             </div>
           ) : null}
@@ -540,15 +540,15 @@ function EditorInner({ id }: { id: string }) {
           <SearchField value={paletteQuery} onChange={setPaletteQuery} placeholder="Buscar nó" />
           {paletteKinds.map((group) => (
             <div key={group.kind}>
-              <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-clinical-muted">{nodeKindLabels[group.kind]}</p>
+              <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-ebot-muted">{nodeKindLabels[group.kind]}</p>
               <div className="space-y-1">
                 {group.items.map((definition) => {
                   const visual = getNodeVisual(definition.type);
                   const Icon = visual.icon;
                   return (
-                    <button key={definition.type} type="button" onClick={() => addNode(definition.type)} className="flex w-full items-center gap-2.5 rounded-xl border border-clinical-border/[0.10] bg-clinical-surfaceMuted/35 px-3 py-2.5 text-left transition hover:border-clinical-blue/25 hover:bg-clinical-blue/[0.06]">
+                    <button key={definition.type} type="button" onClick={() => addNode(definition.type)} className="flex w-full items-center gap-2.5 rounded-xl border border-ebot-border/[0.10] bg-ebot-surfaceMuted/35 px-3 py-2.5 text-left transition hover:border-ebot-primary/25 hover:bg-ebot-primary/[0.06]">
                       <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", toneStyles[visual.tone])}><Icon className="size-4" /></span>
-                      <span className="min-w-0"><span className="block truncate text-[13px] font-extrabold text-clinical-dark">{definition.label}</span><span className="block truncate text-[11px] font-semibold text-clinical-muted">{definition.description}</span></span>
+                      <span className="min-w-0"><span className="block truncate text-[13px] font-extrabold text-ebot-dark">{definition.label}</span><span className="block truncate text-[11px] font-semibold text-ebot-muted">{definition.description}</span></span>
                     </button>
                   );
                 })}
@@ -561,7 +561,7 @@ function EditorInner({ id }: { id: string }) {
       <Drawer open={logsOpen} onClose={() => setLogsOpen(false)} title="Logs de execução" description={`${name} · histórico recente`} width="max-w-xl">
         <div className="space-y-3">
           {execution ? (
-            <button type="button" onClick={() => { setLogsOpen(false); }} className="flex w-full items-center justify-between rounded-2xl border border-clinical-blue/30 bg-clinical-blue/[0.07] px-4 py-3 text-left text-sm font-bold text-clinical-blueText">
+            <button type="button" onClick={() => { setLogsOpen(false); }} className="flex w-full items-center justify-between rounded-2xl border border-ebot-primary/30 bg-ebot-primary/[0.07] px-4 py-3 text-left text-sm font-bold text-ebot-primaryText">
               <span className="flex items-center gap-2"><Check className="size-4" />Último teste destacado no canvas</span>
               <span className="text-[11px] font-extrabold">{execution.status === "success" ? "sucesso" : "erro"}</span>
             </button>
@@ -573,40 +573,40 @@ function EditorInner({ id }: { id: string }) {
       <Drawer open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Configurações do fluxo" description="Canal, base de conhecimento e comportamento de execução." width="max-w-lg">
         <div className="space-y-4">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-extrabold text-clinical-dark">Descrição</span>
-            <textarea value={description} onChange={(event) => { setDescription(event.target.value); setDirty(true); }} rows={3} className="w-full resize-y rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 p-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
+            <span className="mb-1.5 block text-sm font-extrabold text-ebot-dark">Descrição</span>
+            <textarea value={description} onChange={(event) => { setDescription(event.target.value); setDirty(true); }} rows={3} className="w-full resize-y rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 p-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-extrabold text-clinical-dark">Canal</span>
-            <select value={channel} onChange={(event) => { setChannel(event.target.value as Workflow["channel"]); setDirty(true); }} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
+            <span className="mb-1.5 block text-sm font-extrabold text-ebot-dark">Canal</span>
+            <select value={channel} onChange={(event) => { setChannel(event.target.value as Workflow["channel"]); setDirty(true); }} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
               <option>WhatsApp</option><option>Instagram</option><option>Webchat</option><option>Todos os canais</option>
             </select>
           </label>
           <div>
-            <span className="mb-1.5 flex items-center gap-2 text-sm font-extrabold text-clinical-dark"><BookOpen className="size-4 text-clinical-teal" />Base de conhecimento do agente</span>
+            <span className="mb-1.5 flex items-center gap-2 text-sm font-extrabold text-ebot-dark"><BookOpen className="size-4 text-ebot-teal" />Base de conhecimento do agente</span>
             <div className="space-y-2">
-              <button type="button" onClick={() => { setKnowledgeBaseId(null); setDirty(true); }} className={cn("flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-bold transition", knowledgeBaseId === null ? "border-clinical-blue/40 bg-clinical-blue/[0.08] text-clinical-blueText" : "border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 text-clinical-slate")}>
+              <button type="button" onClick={() => { setKnowledgeBaseId(null); setDirty(true); }} className={cn("flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-bold transition", knowledgeBaseId === null ? "border-ebot-primary/40 bg-ebot-primary/[0.08] text-ebot-primaryText" : "border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 text-ebot-slate")}>
                 Sem base de conhecimento
                 {knowledgeBaseId === null ? <Check className="size-4" /> : null}
               </button>
               {knowledgeBases.map((base) => (
-                <button key={base.id} type="button" onClick={() => { setKnowledgeBaseId(base.id); setDirty(true); }} className={cn("flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition", knowledgeBaseId === base.id ? "border-clinical-blue/40 bg-clinical-blue/[0.08]" : "border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 hover:border-clinical-blue/25")}>
+                <button key={base.id} type="button" onClick={() => { setKnowledgeBaseId(base.id); setDirty(true); }} className={cn("flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition", knowledgeBaseId === base.id ? "border-ebot-primary/40 bg-ebot-primary/[0.08]" : "border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 hover:border-ebot-primary/25")}>
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-extrabold text-clinical-dark">{base.name}</span>
-                    <span className="block text-xs font-semibold text-clinical-muted">{base.files.length} arquivos</span>
+                    <span className="block truncate text-sm font-extrabold text-ebot-dark">{base.name}</span>
+                    <span className="block text-xs font-semibold text-ebot-muted">{base.files.length} arquivos</span>
                   </span>
-                  {knowledgeBaseId === base.id ? <Check className="size-4 shrink-0 text-clinical-blue" /> : null}
+                  {knowledgeBaseId === base.id ? <Check className="size-4 shrink-0 text-ebot-primary" /> : null}
                 </button>
               ))}
             </div>
           </div>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-extrabold text-clinical-dark">Em caso de erro</span>
-            <select value={workflow.settings.onError} onChange={(event) => { setWorkflow({ ...workflow, settings: { ...workflow.settings, onError: event.target.value as Workflow["settings"]["onError"] } }); setDirty(true); }} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
+            <span className="mb-1.5 block text-sm font-extrabold text-ebot-dark">Em caso de erro</span>
+            <select value={workflow.settings.onError} onChange={(event) => { setWorkflow({ ...workflow, settings: { ...workflow.settings, onError: event.target.value as Workflow["settings"]["onError"] } }); setDirty(true); }} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
               <option value="continuar">Continuar fluxo</option><option value="parar">Parar execução</option>
             </select>
           </label>
-          <div className="rounded-2xl border border-clinical-blue/15 bg-clinical-blue/[0.06] p-3.5 text-xs font-semibold leading-5 text-clinical-slate">
+          <div className="rounded-2xl border border-ebot-primary/15 bg-ebot-primary/[0.06] p-3.5 text-xs font-semibold leading-5 text-ebot-slate">
             Estes parâmetros correspondem ao objeto <strong>settings</strong> do workflow na API do n8n (timezone, errorWorkflow, saveData). Na integração com o backend, eles são enviados no <strong>PUT /api/v1/workflows/{"{id}"}</strong>.
           </div>
           <Button className="w-full" onClick={() => { handleSave(); setSettingsOpen(false); }}><Save className="size-4" />Salvar configurações</Button>

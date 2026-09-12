@@ -15,7 +15,7 @@ const LINE_HEIGHT = "leading-[1.05em]";
 function ReelDigit({ digit, easedPercent }: { digit: number; easedPercent: number }) {
   return (
     <span
-      className={`relative inline-block ${DIGIT_HEIGHT} w-[0.62em] overflow-hidden font-bebas ${FONT_SIZE} ${LINE_HEIGHT} tracking-[0.01em] text-clinical-dark`}
+      className={`relative inline-block ${DIGIT_HEIGHT} w-[0.62em] overflow-hidden font-bebas ${FONT_SIZE} ${LINE_HEIGHT} tracking-[0.01em] text-ebot-dark`}
       style={{ transform: "translateZ(0)" }}
     >
       <span
@@ -83,7 +83,7 @@ export function ReelNumber({ value, format }: { value: number; format: KpiFormat
           return (
             <span
               key={`s-${index}`}
-              className={`inline-block font-bebas ${FONT_SIZE} ${LINE_HEIGHT} text-clinical-dark`}
+              className={`inline-block font-bebas ${FONT_SIZE} ${LINE_HEIGHT} text-ebot-dark`}
             >
               {segment.value}
             </span>
@@ -93,7 +93,7 @@ export function ReelNumber({ value, format }: { value: number; format: KpiFormat
         return (
           <span
             key={`u-${index}`}
-            className="ml-1 inline-block font-bebas text-[18px] leading-[1.4em] text-clinical-blue"
+            className="ml-1 inline-block font-bebas text-[18px] leading-[1.4em] text-ebot-primary"
           >
             {segment.value}
           </span>

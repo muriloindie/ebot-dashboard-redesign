@@ -6,35 +6,35 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        clinical: {
-          blue: "rgb(var(--clinical-blue) / <alpha-value>)",
-          blueHover: "rgb(var(--clinical-blue-hover) / <alpha-value>)",
-          blueText: "rgb(var(--clinical-blue-text) / <alpha-value>)",
-          blueSoft: "rgb(var(--clinical-blue-soft) / <alpha-value>)",
-          green: "rgb(var(--clinical-green) / <alpha-value>)",
-          teal: "rgb(var(--clinical-teal) / <alpha-value>)",
-          orange: "rgb(var(--clinical-orange) / <alpha-value>)",
-          red: "rgb(var(--clinical-red) / <alpha-value>)",
-          whatsapp: "rgb(var(--clinical-whatsapp) / <alpha-value>)",
-          dark: "rgb(var(--clinical-dark) / <alpha-value>)",
-          header: "rgb(var(--clinical-header) / <alpha-value>)",
-          charcoal: "rgb(var(--clinical-charcoal) / <alpha-value>)",
-          slate: "rgb(var(--clinical-slate) / <alpha-value>)",
-          muted: "rgb(var(--clinical-muted) / <alpha-value>)",
-          snow: "rgb(var(--clinical-snow) / <alpha-value>)",
-          soft: "rgb(var(--clinical-soft) / <alpha-value>)",
-          surface: "rgb(var(--clinical-surface) / <alpha-value>)",
-          surfaceMuted: "rgb(var(--clinical-surface-muted) / <alpha-value>)",
-          border: "rgb(var(--clinical-border) / <alpha-value>)"
+        ebot: {
+          primary: "rgb(var(--ebot-primary) / <alpha-value>)",
+          primaryHover: "rgb(var(--ebot-primary-hover) / <alpha-value>)",
+          primaryText: "rgb(var(--ebot-primary-text) / <alpha-value>)",
+          primarySoft: "rgb(var(--ebot-primary-soft) / <alpha-value>)",
+          green: "rgb(var(--ebot-green) / <alpha-value>)",
+          teal: "rgb(var(--ebot-teal) / <alpha-value>)",
+          orange: "rgb(var(--ebot-orange) / <alpha-value>)",
+          red: "rgb(var(--ebot-red) / <alpha-value>)",
+          whatsapp: "rgb(var(--ebot-whatsapp) / <alpha-value>)",
+          dark: "rgb(var(--ebot-dark) / <alpha-value>)",
+          header: "rgb(var(--ebot-header) / <alpha-value>)",
+          charcoal: "rgb(var(--ebot-charcoal) / <alpha-value>)",
+          slate: "rgb(var(--ebot-slate) / <alpha-value>)",
+          muted: "rgb(var(--ebot-muted) / <alpha-value>)",
+          snow: "rgb(var(--ebot-snow) / <alpha-value>)",
+          soft: "rgb(var(--ebot-soft) / <alpha-value>)",
+          surface: "rgb(var(--ebot-surface) / <alpha-value>)",
+          surfaceMuted: "rgb(var(--ebot-surface-muted) / <alpha-value>)",
+          border: "rgb(var(--ebot-border) / <alpha-value>)"
         }
       },
       boxShadow: {
-        clinical: "var(--shadow-clinical)",
+        ebot: "var(--shadow-ebot)",
         card: "var(--shadow-card)",
         glow: "var(--shadow-glow)"
       },
       borderRadius: {
-        clinical: "28px"
+        ebot: "28px"
       },
       fontFamily: {
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]

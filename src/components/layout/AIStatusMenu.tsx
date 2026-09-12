@@ -46,7 +46,7 @@ export function AIStatusMenu({ onNavigate }: AIStatusMenuProps) {
       <button
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="relative flex size-11 items-center justify-center gap-2 rounded-2xl border border-clinical-blue/35 bg-clinical-blue text-[13px] font-extrabold text-white shadow-[0_8px_20px_rgba(58,157,202,0.14)] transition hover:bg-clinical-blueHover hover:shadow-[0_10px_24px_rgba(58,157,202,0.18)] focus:outline-none focus:ring-2 focus:ring-clinical-blue/25 sm:w-auto sm:px-3"
+        className="relative flex size-11 items-center justify-center gap-2 rounded-2xl border border-ebot-primary/35 bg-ebot-primary text-[13px] font-extrabold text-ebot-charcoal shadow-[0_8px_20px_rgba(4,27,21,0.14)] transition hover:bg-ebot-primaryHover hover:shadow-[0_10px_24px_rgba(4,27,21,0.18)] focus:outline-none focus:ring-2 focus:ring-ebot-primary/25 sm:w-auto sm:px-3"
       >
         <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-[#8EE84F]">
           <span className="absolute -inset-1 animate-pulse-ring rounded-full bg-[#8EE84F]" />
@@ -59,53 +59,53 @@ export function AIStatusMenu({ onNavigate }: AIStatusMenuProps) {
       {open ? (
         <div
           ref={panelRef}
-          className="fixed left-3 right-3 top-[76px] z-50 max-h-[calc(100vh-96px)] overflow-y-auto rounded-[26px] border border-clinical-border/[0.14] bg-clinical-surface/[0.96] p-4 shadow-[0_24px_70px_rgba(38,53,50,0.16)] backdrop-blur-2xl dark:border-white/[0.08] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:origin-top-right sm:overflow-visible"
+          className="fixed left-3 right-3 top-[76px] z-50 max-h-[calc(100vh-96px)] overflow-y-auto rounded-[26px] border border-ebot-border/[0.14] bg-ebot-surface/[0.96] p-4 shadow-[0_24px_70px_rgba(4,27,21,0.16)] backdrop-blur-2xl dark:border-white/[0.08] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:origin-top-right sm:overflow-visible"
         >
-          <span className="absolute -top-2 right-8 hidden size-4 rotate-45 rounded-sm border-l border-t border-clinical-border/[0.14] bg-clinical-surface/[0.96] dark:border-white/[0.08] sm:block" />
+          <span className="absolute -top-2 right-8 hidden size-4 rotate-45 rounded-sm border-l border-t border-ebot-border/[0.14] bg-ebot-surface/[0.96] dark:border-white/[0.08] sm:block" />
           <div className="relative z-10">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <p className="text-base font-extrabold text-clinical-dark">IA conectada</p>
-                <p className="mt-1 text-[13px] font-semibold text-clinical-muted">Provider, modelo e contexto operacional.</p>
+                <p className="text-base font-extrabold text-ebot-dark">IA conectada</p>
+                <p className="mt-1 text-[13px] font-semibold text-ebot-muted">Provider, modelo e contexto operacional.</p>
               </div>
               <span className="rounded-full border border-[#087DFF]/20 bg-[#087DFF]/[0.10] px-2.5 py-1 text-[13px] font-extrabold text-[#087DFF] dark:text-[#7BC1FF]">
                 {aiConnection.status}
               </span>
             </div>
 
-            <div className="rounded-[24px] border border-[#087DFF]/15 bg-[radial-gradient(circle_at_10%_0%,rgba(8,125,255,0.18),transparent_38%),rgb(var(--clinical-surface-muted)/0.58)] p-4">
+            <div className="rounded-[24px] border border-[#087DFF]/15 bg-[radial-gradient(circle_at_10%_0%,rgba(8,125,255,0.18),transparent_38%),rgb(var(--ebot-surface-muted)/0.58)] p-4">
               <div className="flex items-start gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#087DFF]/[0.12] text-[#087DFF] shadow-[inset_5px_5px_12px_rgba(38,53,50,0.05),inset_-5px_-5px_12px_rgba(255,255,255,0.55)] dark:text-[#7BC1FF] dark:shadow-none">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#087DFF]/[0.12] text-[#087DFF] shadow-[inset_5px_5px_12px_rgba(4,27,21,0.05),inset_-5px_-5px_12px_rgba(255,255,255,0.55)] dark:text-[#7BC1FF] dark:shadow-none">
                   <BrainCircuit className="size-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-black text-clinical-dark">{aiConnection.name}</p>
-                  <p className="mt-1 flex items-center gap-1.5 text-[13px] font-bold text-clinical-slate">
+                  <p className="text-[15px] font-black text-ebot-dark">{aiConnection.name}</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-[13px] font-bold text-ebot-slate">
                     <Sparkles className="size-3.5 text-[#087DFF]" /> {aiConnection.provider} · {aiConnection.model}
                   </p>
-                  <p className="mt-2 text-[13px] font-semibold leading-5 text-clinical-muted">{aiConnection.context}</p>
+                  <p className="mt-2 text-[13px] font-semibold leading-5 text-ebot-muted">{aiConnection.context}</p>
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-2xl border border-[#087DFF]/10 bg-clinical-surface/70 p-3">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-clinical-muted">Precisão</p>
+                <div className="rounded-2xl border border-[#087DFF]/10 bg-ebot-surface/70 p-3">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-ebot-muted">Precisão</p>
                   <p className="mt-1 text-base font-black text-[#087DFF] dark:text-[#7BC1FF]">{aiConnection.accuracy}</p>
                 </div>
-                <div className="rounded-2xl border border-[#087DFF]/10 bg-clinical-surface/70 p-3">
-                  <p className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.08em] text-clinical-muted"><Clock3 className="size-3" /> Latência</p>
-                  <p className="mt-1 text-base font-black text-clinical-dark">{aiConnection.latency}</p>
+                <div className="rounded-2xl border border-[#087DFF]/10 bg-ebot-surface/70 p-3">
+                  <p className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.08em] text-ebot-muted"><Clock3 className="size-3" /> Latência</p>
+                  <p className="mt-1 text-base font-black text-ebot-dark">{aiConnection.latency}</p>
                 </div>
-                <div className="rounded-2xl border border-[#087DFF]/10 bg-clinical-surface/70 p-3">
-                  <p className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.08em] text-clinical-muted"><DatabaseZap className="size-3" /> Status</p>
-                  <p className="mt-1 text-base font-black text-clinical-green">{aiConnection.status}</p>
+                <div className="rounded-2xl border border-[#087DFF]/10 bg-ebot-surface/70 p-3">
+                  <p className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.08em] text-ebot-muted"><DatabaseZap className="size-3" /> Status</p>
+                  <p className="mt-1 text-base font-black text-ebot-green">{aiConnection.status}</p>
                 </div>
               </div>
-              <p className="mt-3 rounded-2xl bg-clinical-surface/70 px-3 py-2 text-[13px] font-semibold text-clinical-muted">Última ação: <span className="font-extrabold text-clinical-dark">{aiConnection.lastAction}</span></p>
+              <p className="mt-3 rounded-2xl bg-ebot-surface/70 px-3 py-2 text-[13px] font-semibold text-ebot-muted">Última ação: <span className="font-extrabold text-ebot-dark">{aiConnection.lastAction}</span></p>
             </div>
 
             <button
               onClick={navigateToSettings}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-clinical-blue/20 bg-clinical-blue px-4 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(58,157,202,0.16)] transition hover:bg-clinical-blueHover focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-ebot-primary/20 bg-ebot-primary px-4 py-3 text-sm font-extrabold text-ebot-charcoal shadow-[0_10px_24px_rgba(4,27,21,0.16)] transition hover:bg-ebot-primaryHover focus:outline-none focus:ring-2 focus:ring-ebot-primary/25"
             >
               <Settings className="size-4" /> Configurar IA <ArrowRight className="size-4" />
             </button>

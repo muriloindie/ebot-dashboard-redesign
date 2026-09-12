@@ -13,10 +13,10 @@ const ALL = "Todos";
 type Method = typeof ALL | "GET" | "POST" | "PUT" | "DELETE";
 
 const methodMeta: Record<Exclude<Method, typeof ALL>, { chip: string }> = {
-  GET: { chip: "bg-clinical-blue/[0.10] text-clinical-blueText" },
-  POST: { chip: "bg-clinical-teal/[0.10] text-clinical-teal" },
-  PUT: { chip: "bg-clinical-orange/[0.12] text-clinical-orange" },
-  DELETE: { chip: "bg-clinical-red/[0.10] text-clinical-red" }
+  GET: { chip: "bg-ebot-primary/[0.10] text-ebot-primaryText" },
+  POST: { chip: "bg-ebot-teal/[0.10] text-ebot-teal" },
+  PUT: { chip: "bg-ebot-orange/[0.12] text-ebot-orange" },
+  DELETE: { chip: "bg-ebot-red/[0.10] text-ebot-red" }
 };
 
 export function ApiPage() {
@@ -32,7 +32,7 @@ export function ApiPage() {
   const stats: StatItem[] = useMemo(() => [
     { id: "calls", label: "Chamadas (7 dias)", value: endpoints.reduce((total, endpoint) => total + endpoint.usage7d, 0).toLocaleString("pt-BR"), hint: "entre todos os endpoints", tone: "blue", icon: Activity },
     { id: "endpoints", label: "Endpoints", value: String(endpoints.length), hint: "v1 público + webhooks", tone: "teal", icon: Globe },
-    { id: "webhooks", label: "Webhooks ativos", value: String(endpoints.filter((endpoint) => endpoint.auth === "Interno").length), hint: "laboratório e WhatsApp", tone: "green", icon: Webhook }
+    { id: "webhooks", label: "Webhooks ativos", value: String(endpoints.filter((endpoint) => endpoint.auth === "Interno").length), hint: "ERP e WhatsApp", tone: "green", icon: Webhook }
   ], [endpoints]);
 
   function copyPath(path: string) {
@@ -65,8 +65,8 @@ export function ApiPage() {
           value={method}
           onChange={(id) => setMethod(id as Method)}
         />
-        <span className="flex items-center gap-1.5 text-[11px] font-bold text-clinical-muted">
-          <ShieldCheck className="size-3.5 text-clinical-green" />Auth por Bearer token com escopo
+        <span className="flex items-center gap-1.5 text-[11px] font-bold text-ebot-muted">
+          <ShieldCheck className="size-3.5 text-ebot-green" />Auth por Bearer token com escopo
         </span>
       </div>
 
@@ -81,28 +81,28 @@ export function ApiPage() {
         </TableHead>
         <tbody>
           {filtered.map((endpoint) => (
-            <tr key={endpoint.id} className="border-b border-clinical-border/[0.08] transition last:border-0 hover:bg-clinical-surfaceMuted/40">
+            <tr key={endpoint.id} className="border-b border-ebot-border/[0.08] transition last:border-0 hover:bg-ebot-surfaceMuted/40">
               <TableCell>
                 <span className={cn("inline-block rounded-lg px-2 py-1 text-[11px] font-extrabold", methodMeta[endpoint.method].chip)}>{endpoint.method}</span>
               </TableCell>
               <TableCell>
-                <button onClick={() => copyPath(endpoint.path)} className="group flex items-center gap-2 text-left font-mono text-[13px] font-bold text-clinical-dark transition hover:text-clinical-blue" title="Copiar caminho">
+                <button onClick={() => copyPath(endpoint.path)} className="group flex items-center gap-2 text-left font-mono text-[13px] font-bold text-ebot-dark transition hover:text-ebot-primary" title="Copiar caminho">
                   {endpoint.path}
-                  {copied === endpoint.path ? <CheckIcon /> : <Copy className="size-3.5 text-clinical-muted opacity-0 transition group-hover:opacity-100" />}
+                  {copied === endpoint.path ? <CheckIcon /> : <Copy className="size-3.5 text-ebot-muted opacity-0 transition group-hover:opacity-100" />}
                 </button>
               </TableCell>
-              <TableCell className="hidden md:table-cell"><span className="text-[12px] font-extrabold text-clinical-slate">{endpoint.module}</span></TableCell>
-              <TableCell className="hidden lg:table-cell"><span className="text-[12px] font-semibold text-clinical-muted">{endpoint.description}</span></TableCell>
+              <TableCell className="hidden md:table-cell"><span className="text-[12px] font-extrabold text-ebot-slate">{endpoint.module}</span></TableCell>
+              <TableCell className="hidden lg:table-cell"><span className="text-[12px] font-semibold text-ebot-muted">{endpoint.description}</span></TableCell>
               <TableCell>
-                <span className={cn("rounded-lg px-2 py-1 text-[11px] font-extrabold", endpoint.auth === "Interno" ? "bg-clinical-surfaceMuted text-clinical-slate" : "bg-clinical-green/[0.12] text-clinical-green")}>
+                <span className={cn("rounded-lg px-2 py-1 text-[11px] font-extrabold", endpoint.auth === "Interno" ? "bg-ebot-surfaceMuted text-ebot-slate" : "bg-ebot-green/[0.12] text-ebot-green")}>
                   {endpoint.auth === "Interno" ? "Webhook" : "Bearer"}
                 </span>
               </TableCell>
-              <TableCell className="text-right"><span className="font-mono text-[13px] font-bold text-clinical-dark">{endpoint.usage7d.toLocaleString("pt-BR")}</span></TableCell>
+              <TableCell className="text-right"><span className="font-mono text-[13px] font-bold text-ebot-dark">{endpoint.usage7d.toLocaleString("pt-BR")}</span></TableCell>
             </tr>
           ))}
           {filtered.length === 0 && (
-            <tr><TableCell className="py-10 text-center text-clinical-muted">Nenhum endpoint para este método.</TableCell></tr>
+            <tr><TableCell className="py-10 text-center text-ebot-muted">Nenhum endpoint para este método.</TableCell></tr>
           )}
         </tbody>
       </TableSurface>
@@ -112,7 +112,7 @@ export function ApiPage() {
 
 function CheckIcon() {
   return (
-    <span className="size-3.5 rounded-full bg-clinical-green/[0.12] text-clinical-green">
+    <span className="size-3.5 rounded-full bg-ebot-green/[0.12] text-ebot-green">
       <svg viewBox="0 0 14 14" fill="none" className="h-full w-full p-0.5"><path d="M3.5 7.2 6 9.7l4.5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
     </span>
   );

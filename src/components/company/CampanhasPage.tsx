@@ -17,11 +17,11 @@ const ALL = "Todas";
 const statusOptions = [ALL, "draft", "scheduled", "sending", "paused", "finished"] as const;
 
 const statusMeta: Record<Campaign["status"], { label: string; chip: string; dot: string }> = {
-  draft: { label: "Rascunho", chip: "bg-clinical-surfaceMuted text-clinical-slate", dot: "bg-clinical-slate" },
-  scheduled: { label: "Agendada", chip: "bg-clinical-blue/[0.10] text-clinical-blueText", dot: "bg-clinical-blue" },
-  sending: { label: "Enviando", chip: "bg-clinical-green/[0.12] text-clinical-green", dot: "bg-clinical-green animate-pulse" },
-  paused: { label: "Pausada", chip: "bg-clinical-orange/[0.12] text-clinical-orange", dot: "bg-clinical-orange" },
-  finished: { label: "Concluída", chip: "bg-clinical-teal/[0.10] text-clinical-teal", dot: "bg-clinical-teal" }
+  draft: { label: "Rascunho", chip: "bg-ebot-surfaceMuted text-ebot-slate", dot: "bg-ebot-slate" },
+  scheduled: { label: "Agendada", chip: "bg-ebot-primary/[0.10] text-ebot-primaryText", dot: "bg-ebot-primary" },
+  sending: { label: "Enviando", chip: "bg-ebot-green/[0.12] text-ebot-green", dot: "bg-ebot-green animate-pulse" },
+  paused: { label: "Pausada", chip: "bg-ebot-orange/[0.12] text-ebot-orange", dot: "bg-ebot-orange" },
+  finished: { label: "Concluída", chip: "bg-ebot-teal/[0.10] text-ebot-teal", dot: "bg-ebot-teal" }
 };
 
 const channelIcon: Record<Campaign["channel"], typeof MessageCircle> = {
@@ -43,7 +43,7 @@ export function CampanhasPage() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
 
-  const templates = useMemo(() => getCampaignSettings().defaultTemplate ? [getCampaignSettings().defaultTemplate, "Confirmação de consulta D-1", "Reativação de pacientes inativos", "Aniversariantes do dia", "Novidades da unidade"] : [], []);
+  const templates = useMemo(() => getCampaignSettings().defaultTemplate ? [getCampaignSettings().defaultTemplate, "Confirmação de agendamento D-1", "Reativação de clientes inativos", "Aniversariantes do dia", "Novidades da filial"] : [], []);
 
   const filtered = useMemo(() => {
     return campaigns.filter((campaign) => {
@@ -130,7 +130,7 @@ export function CampanhasPage() {
       <PageHeader
         eyebrow="Comunicação / Disparos"
         title="Campanhas"
-        description="Disparos em massa com janelas de horário, listas segmentadas e rastreio de entrega. As regras de envio respeitam consentimento e limites da unidade."
+        description="Disparos em massa com janelas de horário, listas segmentadas e rastreio de entrega. As regras de envio respeitam consentimento e limites da filial."
         action={<Button onClick={() => setCreating(true)}><Plus className="size-4" />Nova campanha</Button>}
       />
 
@@ -150,9 +150,9 @@ export function CampanhasPage() {
             const meta = statusMeta[campaign.status];
             const pct = progress(campaign);
             return (
-              <article key={campaign.id} className="flex flex-col rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/80 p-5 shadow-[0_8px_24px_rgba(38,53,50,0.04)] transition hover:border-clinical-blue/25 hover:shadow-clinical">
+              <article key={campaign.id} className="flex flex-col rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/80 p-5 shadow-[0_8px_24px_rgba(4,27,21,0.04)] transition hover:border-ebot-primary/25 hover:shadow-ebot">
                 <div className="flex items-start justify-between gap-3">
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-clinical-orange/[0.12] text-clinical-orange">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-ebot-orange/[0.12] text-ebot-orange">
                     <ChannelIcon className="size-5" />
                   </span>
                   <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold", meta.chip)}>
@@ -160,37 +160,37 @@ export function CampanhasPage() {
                     {meta.label}
                   </span>
                 </div>
-                <h2 className="mt-3 text-base font-extrabold tracking-tight text-clinical-dark">{campaign.name}</h2>
-                <p className="mt-1 flex items-center gap-1.5 text-[12px] font-bold text-clinical-muted">
+                <h2 className="mt-3 text-base font-extrabold tracking-tight text-ebot-dark">{campaign.name}</h2>
+                <p className="mt-1 flex items-center gap-1.5 text-[12px] font-bold text-ebot-muted">
                   <Users className="size-3.5" />{campaign.audienceListName} · {campaign.stats.total.toLocaleString("pt-BR")} contatos
                 </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <span className="rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-slate">{campaign.template}</span>
+                  <span className="rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-slate">{campaign.template}</span>
                   {campaign.schedule.mode === "agendada" ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-clinical-blue/[0.08] px-2.5 py-1 text-[11px] font-extrabold text-clinical-blueText">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-ebot-primary/[0.08] px-2.5 py-1 text-[11px] font-extrabold text-ebot-primaryText">
                       <CalendarClock className="size-3" />{campaign.schedule.date}
                     </span>
                   ) : campaign.status === "sending" ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-clinical-green/[0.12] px-2.5 py-1 text-[11px] font-extrabold text-clinical-green">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-ebot-green/[0.12] px-2.5 py-1 text-[11px] font-extrabold text-ebot-green">
                       <Send className="size-3" />Enviando agora
                     </span>
                   ) : null}
                 </div>
                 <div className="mt-4">
-                  <div className="flex items-center justify-between text-[11px] font-extrabold text-clinical-muted">
+                  <div className="flex items-center justify-between text-[11px] font-extrabold text-ebot-muted">
                     <span>Progresso de envio</span>
                     <span>{campaign.stats.sent.toLocaleString("pt-BR")}/{campaign.stats.total.toLocaleString("pt-BR")}</span>
                   </div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-clinical-surfaceMuted">
-                    <div className={cn("h-full rounded-full transition-all", campaign.status === "finished" ? "bg-clinical-teal" : campaign.status === "paused" ? "bg-clinical-orange" : "bg-clinical-blue")} style={{ width: `${pct}%` }} />
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ebot-surfaceMuted">
+                    <div className={cn("h-full rounded-full transition-all", campaign.status === "finished" ? "bg-ebot-teal" : campaign.status === "paused" ? "bg-ebot-orange" : "bg-ebot-primary")} style={{ width: `${pct}%` }} />
                   </div>
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3 text-center">
-                  <div><p className="text-sm font-extrabold text-clinical-dark">{campaign.stats.delivered.toLocaleString("pt-BR")}</p><p className="text-[10px] font-extrabold uppercase tracking-wide text-clinical-muted">Entregues</p></div>
-                  <div><p className="text-sm font-extrabold text-clinical-dark">{campaign.stats.failed}</p><p className="text-[10px] font-extrabold uppercase tracking-wide text-clinical-muted">Falhas</p></div>
-                  <div><p className="text-sm font-extrabold text-clinical-dark">{campaign.stats.replied}</p><p className="text-[10px] font-extrabold uppercase tracking-wide text-clinical-muted">Respostas</p></div>
+                <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-3 text-center">
+                  <div><p className="text-sm font-extrabold text-ebot-dark">{campaign.stats.delivered.toLocaleString("pt-BR")}</p><p className="text-[10px] font-extrabold uppercase tracking-wide text-ebot-muted">Entregues</p></div>
+                  <div><p className="text-sm font-extrabold text-ebot-dark">{campaign.stats.failed}</p><p className="text-[10px] font-extrabold uppercase tracking-wide text-ebot-muted">Falhas</p></div>
+                  <div><p className="text-sm font-extrabold text-ebot-dark">{campaign.stats.replied}</p><p className="text-[10px] font-extrabold uppercase tracking-wide text-ebot-muted">Respostas</p></div>
                 </div>
-                <div className="mt-4 flex gap-2 border-t border-clinical-border/[0.10] pt-4">
+                <div className="mt-4 flex gap-2 border-t border-ebot-border/[0.10] pt-4">
                   <Button variant="secondary" size="sm" className="flex-1" onClick={() => setSelected(campaign)}>Detalhes</Button>
                   {campaign.status === "draft" ? (
                     <Button size="sm" className="flex-1" onClick={() => sendNow(campaign)}><Send className="size-4" />Enviar agora</Button>
@@ -214,57 +214,57 @@ export function CampanhasPage() {
                 <span className={cn("size-1.5 rounded-full", statusMeta[selected.status].dot)} />
                 {statusMeta[selected.status].label}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-slate">{selected.channel}</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-slate">{selected.sentBy} · {selected.updatedAt}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-slate">{selected.channel}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-slate">{selected.sentBy} · {selected.updatedAt}</span>
             </div>
 
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: "Enviadas", value: selected.stats.sent.toLocaleString("pt-BR"), icon: Send, tone: "text-clinical-blue" },
-                { label: "Entregues", value: selected.stats.delivered.toLocaleString("pt-BR"), icon: CheckIcon, tone: "text-clinical-green" },
-                { label: "Falhas", value: String(selected.stats.failed), icon: AlertIcon, tone: "text-clinical-red" },
-                { label: "Respostas", value: String(selected.stats.replied), icon: TrendingUp, tone: "text-clinical-orange" }
+                { label: "Enviadas", value: selected.stats.sent.toLocaleString("pt-BR"), icon: Send, tone: "text-ebot-primary" },
+                { label: "Entregues", value: selected.stats.delivered.toLocaleString("pt-BR"), icon: CheckIcon, tone: "text-ebot-green" },
+                { label: "Falhas", value: String(selected.stats.failed), icon: AlertIcon, tone: "text-ebot-red" },
+                { label: "Respostas", value: String(selected.stats.replied), icon: TrendingUp, tone: "text-ebot-orange" }
               ].map((metric) => {
                 const Icon = metric.icon;
                 return (
-                  <div key={metric.label} className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-4">
+                  <div key={metric.label} className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-4">
                     <Icon className={cn("size-4", metric.tone)} />
-                    <p className="mt-2 text-xl font-extrabold text-clinical-dark">{metric.value}</p>
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-clinical-muted">{metric.label}</p>
+                    <p className="mt-2 text-xl font-extrabold text-ebot-dark">{metric.value}</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-ebot-muted">{metric.label}</p>
                   </div>
                 );
               })}
             </section>
 
-            <section className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-4">
-              <h3 className="text-sm font-extrabold text-clinical-dark">Público e segmentação</h3>
+            <section className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-4">
+              <h3 className="text-sm font-extrabold text-ebot-dark">Público e segmentação</h3>
               <dl className="mt-3 space-y-2 text-[13px]">
-                <div className="flex justify-between gap-4"><dt className="font-bold text-clinical-muted">Lista</dt><dd className="text-right font-extrabold text-clinical-dark">{selected.audienceListName}</dd></div>
-                <div className="flex justify-between gap-4"><dt className="font-bold text-clinical-muted">Agendamento</dt><dd className="text-right font-extrabold text-clinical-dark">{selected.schedule.mode === "agora" ? "Envio imediato" : `${selected.schedule.date} · ${selected.schedule.window}`}</dd></div>
-                <div className="flex justify-between gap-4"><dt className="font-bold text-clinical-muted">Template</dt><dd className="text-right font-extrabold text-clinical-dark">{selected.template}</dd></div>
-                <div className="flex justify-between gap-4"><dt className="font-bold text-clinical-muted">Taxa de entrega</dt><dd className="text-right font-extrabold text-clinical-green">{selected.stats.sent ? Math.round((selected.stats.delivered / selected.stats.sent) * 100) : 0}%</dd></div>
+                <div className="flex justify-between gap-4"><dt className="font-bold text-ebot-muted">Lista</dt><dd className="text-right font-extrabold text-ebot-dark">{selected.audienceListName}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="font-bold text-ebot-muted">Agendamento</dt><dd className="text-right font-extrabold text-ebot-dark">{selected.schedule.mode === "agora" ? "Envio imediato" : `${selected.schedule.date} · ${selected.schedule.window}`}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="font-bold text-ebot-muted">Template</dt><dd className="text-right font-extrabold text-ebot-dark">{selected.template}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="font-bold text-ebot-muted">Taxa de entrega</dt><dd className="text-right font-extrabold text-ebot-green">{selected.stats.sent ? Math.round((selected.stats.delivered / selected.stats.sent) * 100) : 0}%</dd></div>
               </dl>
             </section>
 
             <section>
-              <h3 className="mb-2 text-sm font-extrabold text-clinical-dark">Linha do tempo</h3>
+              <h3 className="mb-2 text-sm font-extrabold text-ebot-dark">Linha do tempo</h3>
               <ol className="space-y-2">
                 {[
                   { label: "Campanha criada", by: selected.sentBy, at: selected.updatedAt },
                   ...(selected.status === "finished" ? [{ label: "Envio concluído", by: "Sistema", at: "concluído" }] : []),
                   ...(selected.status === "sending" ? [{ label: "Em andamento", by: "Sistema", at: "enviando agora" }] : [])
                 ].map((event, index) => (
-                  <li key={index} className="flex items-center gap-3 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 px-3 py-2.5">
-                    <span className="size-2 shrink-0 rounded-full bg-clinical-blue" />
-                    <span className="flex-1 text-[13px] font-extrabold text-clinical-dark">{event.label}</span>
-                    <span className="text-[11px] font-bold text-clinical-muted">{event.by} · {event.at}</span>
+                  <li key={index} className="flex items-center gap-3 rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 px-3 py-2.5">
+                    <span className="size-2 shrink-0 rounded-full bg-ebot-primary" />
+                    <span className="flex-1 text-[13px] font-extrabold text-ebot-dark">{event.label}</span>
+                    <span className="text-[11px] font-bold text-ebot-muted">{event.by} · {event.at}</span>
                   </li>
                 ))}
               </ol>
             </section>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-clinical-border/[0.10] pt-4">
-              <Button variant="ghost" size="sm" className="text-clinical-red hover:bg-clinical-red/[0.08] hover:text-clinical-red" onClick={() => setDeleting(selected)}><Trash2 className="size-4" />Excluir campanha</Button>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ebot-border/[0.10] pt-4">
+              <Button variant="ghost" size="sm" className="text-ebot-red hover:bg-ebot-red/[0.08] hover:text-ebot-red" onClick={() => setDeleting(selected)}><Trash2 className="size-4" />Excluir campanha</Button>
               {selected.status === "scheduled" ? <Button onClick={() => sendNow(selected)}><Send className="size-4" />Enviar agora</Button> : null}
               {selected.status === "sending" || selected.status === "paused" ? (
                 <Button variant={selected.status === "sending" ? "secondary" : "primary"} onClick={() => togglePause(selected)}>
@@ -279,45 +279,45 @@ export function CampanhasPage() {
       <Modal open={creating} onClose={() => setCreating(false)} title="Nova campanha" eyebrow="Comunicação / Disparos" description="Configure público, canal e agendamento. A mensagem usa um template de fluxo." icon={Megaphone} className="max-w-xl">
         <div className="space-y-4">
           <div>
-            <label htmlFor="cmp-name" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Nome da campanha</label>
-            <input id="cmp-name" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Ex.: Lembrete de retorno pós-consulta" className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
+            <label htmlFor="cmp-name" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Nome da campanha</label>
+            <input id="cmp-name" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Ex.: Lembrete de retorno pós-agendamento" className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="cmp-channel" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Canal</label>
-              <select id="cmp-channel" value={draft.channel} onChange={(event) => setDraft({ ...draft, channel: event.target.value as Campaign["channel"] })} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
+              <label htmlFor="cmp-channel" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Canal</label>
+              <select id="cmp-channel" value={draft.channel} onChange={(event) => setDraft({ ...draft, channel: event.target.value as Campaign["channel"] })} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
                 <option>WhatsApp</option><option>Instagram</option><option>E-mail</option>
               </select>
             </div>
             <div>
-              <label htmlFor="cmp-list" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Lista de contatos</label>
-              <select id="cmp-list" value={draft.listId} onChange={(event) => setDraft({ ...draft, listId: event.target.value })} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
+              <label htmlFor="cmp-list" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Lista de contatos</label>
+              <select id="cmp-list" value={draft.listId} onChange={(event) => setDraft({ ...draft, listId: event.target.value })} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
                 <option value="">Selecione…</option>
                 {lists.map((list) => <option key={list.id} value={list.id}>{list.name} ({list.size.toLocaleString("pt-BR")})</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label htmlFor="cmp-template" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Template de mensagem</label>
-            <select id="cmp-template" value={draft.template} onChange={(event) => setDraft({ ...draft, template: event.target.value })} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
+            <label htmlFor="cmp-template" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Template de mensagem</label>
+            <select id="cmp-template" value={draft.template} onChange={(event) => setDraft({ ...draft, template: event.target.value })} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
               <option value="">Selecione…</option>
               {templates.map((template) => <option key={template}>{template}</option>)}
             </select>
           </div>
           <fieldset>
-            <legend className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Agendamento</legend>
+            <legend className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Agendamento</legend>
             <div className="flex gap-2">
               {(["agora", "agendada"] as const).map((mode) => (
-                <button key={mode} type="button" onClick={() => setDraft({ ...draft, mode })} className={cn("h-11 flex-1 rounded-2xl border text-xs font-extrabold transition", draft.mode === mode ? "border-clinical-blue/40 bg-clinical-blue/[0.10] text-clinical-blueText" : "border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 text-clinical-muted")}>
+                <button key={mode} type="button" onClick={() => setDraft({ ...draft, mode })} className={cn("h-11 flex-1 rounded-2xl border text-xs font-extrabold transition", draft.mode === mode ? "border-ebot-primary/40 bg-ebot-primary/[0.10] text-ebot-primaryText" : "border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 text-ebot-muted")}>
                   {mode === "agora" ? "Enviar agora" : "Agendar"}
                 </button>
               ))}
             </div>
             {draft.mode === "agendada" ? (
-              <input value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} placeholder="Ex.: hoje, 10:00 ou sex, 10:00" className="mt-3 h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
+              <input value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} placeholder="Ex.: hoje, 10:00 ou sex, 10:00" className="mt-3 h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45" />
             ) : null}
           </fieldset>
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.10] pt-4">
+          <div className="flex justify-end gap-2 border-t border-ebot-border/[0.10] pt-4">
             <Button variant="ghost" onClick={() => setCreating(false)}>Cancelar</Button>
             <Button onClick={create}><Plus className="size-4" />Criar campanha</Button>
           </div>

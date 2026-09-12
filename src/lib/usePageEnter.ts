@@ -14,13 +14,19 @@ type PageEnterOptions = {
   delay?: number;
 };
 
-const DEFAULT_TO: gsap.TweenVars = { opacity: 1, y: 0, x: 0, duration: 0.55, ease: "power3.out" };
+const DEFAULT_TO: gsap.TweenVars = { opacity: 1, y: 0, x: 0, duration: 0.55, ease: "power3.out", clearProps: "opacity,transform" };
+
+export function animationsEnabled() {
+  if (typeof document === "undefined") return true;
+  if (document.documentElement.dataset.motion === "off") return false;
+  return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 export function usePageEnter(ref: RefObject<HTMLElement | null>, targets: PageEnterTarget[], options: PageEnterOptions = {}) {
   const { stagger = 0.06, delay = 0.1 } = options;
 
   useEffect(() => {
-    if (!ref.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!ref.current || !animationsEnabled()) return;
 
     const node = ref.current;
     const tweens = targets.flatMap(({ selector, from = { opacity: 0, y: 18 }, to = {} }) => {

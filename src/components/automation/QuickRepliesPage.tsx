@@ -1,32 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Braces, Hash, MessageCircle, Pencil, Plus, Sparkles, Trash2, TrendingUp, Users, Zap } from "lucide-react";
+import { Braces, Hash, MessageCircle, Pencil, Plus, Sparkles, Trash2, TrendingUp, Zap } from "lucide-react";
 import { deleteQuickReply, listQuickReplies, newQuickReplyId, saveQuickReply } from "@/lib/automation/n8nService";
 import type { QuickReply } from "@/lib/automation/types";
 import { useDemo } from "@/components/state/DemoProvider";
 import { Button } from "@/components/ui/Button";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { Modal } from "@/components/ui/Modal";
-import { StatStrip, type StatItem } from "@/components/ui/StatStrip";
 import { PageHeader, SearchField, SegmentedTabs, StatePanel } from "@/components/ui/Week1Primitives";
 import { cn } from "@/lib/cn";
 
 const ALL = "Todas";
-const categories = [ALL, "Agendamento", "Informações", "Financeiro", "Exames", "Equipe"];
+const categories = [ALL, "Agendamento", "Informações", "Financeiro", "Pedidos", "Equipe"];
 
 const scopeChip: Record<QuickReply["scopes"][number], { label: string; chip: string }> = {
-  pacientes: { label: "Pacientes", chip: "bg-clinical-blue/[0.08] text-clinical-blueText" },
-  interno: { label: "Equipe", chip: "bg-clinical-teal/[0.10] text-clinical-teal" }
+  clientes: { label: "Clientes", chip: "bg-ebot-primary/[0.08] text-ebot-primaryText" },
+  interno: { label: "Equipe", chip: "bg-ebot-teal/[0.10] text-ebot-teal" }
 };
 
-const emptyDraft = { title: "", shortcut: "", category: "Agendamento", scopes: ["pacientes"] as QuickReply["scopes"], text: "" };
+const emptyDraft = { title: "", shortcut: "", category: "Agendamento", scopes: ["clientes"] as QuickReply["scopes"], text: "" };
 
 const VARIABLE_GROUPS: { label: string; chip: string; variables: string[] }[] = [
-  { label: "Paciente", chip: "bg-clinical-blue/[0.08] text-clinical-blueText hover:bg-clinical-blue/[0.14]", variables: ["nome_paciente", "telefone_paciente", "convenio", "nascimento_paciente"] },
-  { label: "Atendimento", chip: "bg-clinical-green/[0.10] text-clinical-green hover:bg-clinical-green/[0.16]", variables: ["nome_profissional", "especialidade", "horario_atendimento", "data_atendimento", "status_atendimento"] },
-  { label: "Unidade", chip: "bg-clinical-orange/[0.10] text-clinical-orange hover:bg-clinical-orange/[0.16]", variables: ["nome_unidade", "endereco_unidade", "telefone_unidade"] },
-  { label: "Financeiro", chip: "bg-clinical-teal/[0.10] text-clinical-teal hover:bg-clinical-teal/[0.16]", variables: ["valor_consulta", "formas_pagamento"] }
+  { label: "Cliente", chip: "bg-ebot-primary/[0.08] text-ebot-primaryText hover:bg-ebot-primary/[0.14]", variables: ["nome_cliente", "telefone_cliente", "parceria", "nascimento_cliente"] },
+  { label: "Atendimento", chip: "bg-ebot-green/[0.10] text-ebot-green hover:bg-ebot-green/[0.16]", variables: ["nome_atendente", "segmento", "horario_atendimento", "data_atendimento", "status_atendimento"] },
+  { label: "Filial", chip: "bg-ebot-orange/[0.10] text-ebot-orange hover:bg-ebot-orange/[0.16]", variables: ["nome_unidade", "endereco_unidade", "telefone_unidade"] },
+  { label: "Financeiro", chip: "bg-ebot-teal/[0.10] text-ebot-teal hover:bg-ebot-teal/[0.16]", variables: ["valor_servico", "formas_pagamento"] }
 ];
 
 export function QuickRepliesPage() {
@@ -68,19 +67,10 @@ export function QuickRepliesPage() {
     });
   }, [replies, query, category]);
 
-  const stats: StatItem[] = useMemo(() => {
-    const usage = replies.reduce((total, reply) => total + reply.usage7d, 0);
-    return [
-      { id: "replies", label: "Respostas salvas", value: String(replies.length), hint: "à disposição da equipe", tone: "blue", icon: MessageCircle },
-      { id: "usage", label: "Usos (7 dias)", value: usage.toLocaleString("pt-BR"), hint: "atendimentos com resposta", tone: "green", icon: TrendingUp },
-      { id: "categories", label: "Categorias", value: String(new Set(replies.map((reply) => reply.category)).size), hint: "organizadas por assunto", tone: "teal", icon: Hash },
-      { id: "scopes", label: "Escopos", value: String(new Set(replies.flatMap((reply) => reply.scopes)).size), hint: "pacientes e equipe", tone: "orange", icon: Users }
-    ];
-  }, [replies]);
 
   function openNew() {
     setDraft(emptyDraft);
-    setEditing({ id: "", title: "", text: "", scopes: ["pacientes"], category: "Agendamento", usage7d: 0, updatedAt: "agora" });
+    setEditing({ id: "", title: "", text: "", scopes: ["clientes"], category: "Agendamento", usage7d: 0, updatedAt: "agora" });
   }
 
   function openEdit(reply: QuickReply) {
@@ -128,11 +118,9 @@ export function QuickRepliesPage() {
       <PageHeader
         eyebrow="Automação / Atendimento"
         title="Respostas rápidas"
-        description="Atalhos de texto que agilizam o atendimento com variáveis dinâmicas como {nome_paciente} e {horario_atendimento}, substituídas automaticamente pela IA."
+        description="Atalhos de texto que agilizam o atendimento com variáveis dinâmicas como {nome_cliente} e {horario_atendimento}, substituídas automaticamente pela IA."
         action={<Button onClick={openNew}><Plus className="size-4" />Nova resposta</Button>}
       />
-
-      <StatStrip items={stats} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SegmentedTabs tabs={categories.map((item) => ({ id: item, label: item }))} value={category} onChange={setCategory} />
@@ -142,31 +130,31 @@ export function QuickRepliesPage() {
       {filtered.length === 0 ? (
         <StatePanel icon={MessageCircle} title={query || category !== ALL ? "Nenhuma resposta encontrada" : "Nenhuma resposta ainda"} description={query || category !== ALL ? "Ajuste a busca ou o filtro de categoria." : "Crie atalhos para as respostas mais usadas pela equipe."} />
       ) : (
-        <div className="overflow-hidden rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/80 shadow-[0_8px_24px_rgba(38,53,50,0.04)]">
-          <ul className="divide-y divide-clinical-border/[0.08]">
+        <div className="overflow-hidden rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/80 shadow-[0_8px_24px_rgba(4,27,21,0.04)]">
+          <ul className="divide-y divide-ebot-border/[0.08]">
             {filtered.map((reply) => (
-              <li key={reply.id} className="flex flex-col gap-3 px-5 py-4 transition hover:bg-clinical-surfaceMuted/30 sm:flex-row sm:items-center">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-clinical-orange/[0.12] text-clinical-orange">
+              <li key={reply.id} className="flex flex-col gap-3 px-5 py-4 transition hover:bg-ebot-surfaceMuted/30 sm:flex-row sm:items-center">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-ebot-orange/[0.12] text-ebot-orange">
                   <Zap className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-sm font-extrabold tracking-tight text-clinical-dark">{reply.title}</h2>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2 py-0.5 text-[10px] font-extrabold text-clinical-slate">
+                    <h2 className="text-sm font-extrabold tracking-tight text-ebot-dark">{reply.title}</h2>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-ebot-surfaceMuted px-2 py-0.5 text-[10px] font-extrabold text-ebot-slate">
                       <Hash className="size-3" />{reply.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}
                     </span>
                     {reply.scopes.map((scope) => (
                       <span key={scope} className={cn("rounded-full px-2 py-0.5 text-[10px] font-extrabold", scopeChip[scope].chip)}>{scopeChip[scope].label}</span>
                     ))}
                   </div>
-                  <p className="mt-1 truncate text-[13px] text-clinical-muted">{reply.text}</p>
+                  <p className="mt-1 truncate text-[13px] text-ebot-muted">{reply.text}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-slate">{reply.category}</span>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-clinical-green"><TrendingUp className="size-3.5" />{reply.usage7d} usos</span>
+                  <span className="rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-slate">{reply.category}</span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-ebot-green"><TrendingUp className="size-3.5" />{reply.usage7d} usos</span>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="sm" aria-label={`Editar ${reply.title}`} onClick={() => openEdit(reply)}><Pencil className="size-4" /></Button>
-                    <Button variant="ghost" size="sm" aria-label={`Excluir ${reply.title}`} onClick={() => setDeleting(reply)}><Trash2 className="size-4 text-clinical-red" /></Button>
+                    <Button variant="ghost" size="sm" aria-label={`Excluir ${reply.title}`} onClick={() => setDeleting(reply)}><Trash2 className="size-4 text-ebot-red" /></Button>
                   </div>
                 </div>
               </li>
@@ -180,29 +168,29 @@ export function QuickRepliesPage() {
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="qr-title" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Título</label>
-                <input id="qr-title" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Ex.: Confirmar consulta" className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
+                <label htmlFor="qr-title" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Título</label>
+                <input id="qr-title" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Ex.: Confirmar agendamento" className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45" />
               </div>
               <div>
-                <label htmlFor="qr-shortcut" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Atalho</label>
+                <label htmlFor="qr-shortcut" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Atalho</label>
                 <div className="relative">
-                  <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-clinical-muted" />
-                  <input id="qr-shortcut" value={draft.shortcut} onChange={(event) => setDraft({ ...draft, shortcut: event.target.value })} placeholder="confirmar-consulta" className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 pl-9 pr-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
+                  <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ebot-muted" />
+                  <input id="qr-shortcut" value={draft.shortcut} onChange={(event) => setDraft({ ...draft, shortcut: event.target.value })} placeholder="confirmar-agendamento" className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 pl-9 pr-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45" />
                 </div>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="qr-category" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Categoria</label>
-                <select id="qr-category" value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value })} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
+                <label htmlFor="qr-category" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Categoria</label>
+                <select id="qr-category" value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value })} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
                   {categories.filter((item) => item !== ALL).map((item) => <option key={item}>{item}</option>)}
                 </select>
               </div>
               <fieldset>
-                <legend className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Disponível para</legend>
+                <legend className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Disponível para</legend>
                 <div className="flex gap-2">
-                  {(["pacientes", "interno"] as const).map((scope) => (
-                    <button key={scope} type="button" onClick={() => setDraft({ ...draft, scopes: draft.scopes.includes(scope) ? draft.scopes.filter((item) => item !== scope) : [...draft.scopes, scope] })} className={cn("h-10 flex-1 rounded-2xl border text-xs font-extrabold transition", draft.scopes.includes(scope) ? "border-clinical-blue/40 bg-clinical-blue/[0.10] text-clinical-blueText" : "border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 text-clinical-muted")}>
+                  {(["clientes", "interno"] as const).map((scope) => (
+                    <button key={scope} type="button" onClick={() => setDraft({ ...draft, scopes: draft.scopes.includes(scope) ? draft.scopes.filter((item) => item !== scope) : [...draft.scopes, scope] })} className={cn("h-10 flex-1 rounded-2xl border text-xs font-extrabold transition", draft.scopes.includes(scope) ? "border-ebot-primary/40 bg-ebot-primary/[0.10] text-ebot-primaryText" : "border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 text-ebot-muted")}>
                       {scopeChip[scope].label}
                     </button>
                   ))}
@@ -211,8 +199,8 @@ export function QuickRepliesPage() {
             </div>
             <div>
               <div className="mb-1.5 flex items-center justify-between gap-2">
-                <label htmlFor="qr-text" className="block text-xs font-extrabold text-clinical-slate">Texto da resposta</label>
-                <button type="button" onClick={() => editorRef.current?.focus()} className="flex items-center gap-1 text-[10px] font-extrabold text-clinical-blueText transition hover:opacity-80"><Braces className="size-3" />Clique ou arraste variáveis abaixo</button>
+                <label htmlFor="qr-text" className="block text-xs font-extrabold text-ebot-slate">Texto da resposta</label>
+                <button type="button" onClick={() => editorRef.current?.focus()} className="flex items-center gap-1 text-[10px] font-extrabold text-ebot-primaryText transition hover:opacity-80"><Braces className="size-3" />Clique ou arraste variáveis abaixo</button>
               </div>
               <div
                 ref={editorRef}
@@ -229,23 +217,23 @@ export function QuickRepliesPage() {
                   const variable = event.dataTransfer.getData("text/plain");
                   if (variable) insertVariable(variable);
                 }}
-                data-placeholder="Olá {nome_paciente}! Sua consulta está confirmada…"
-                className="qr-editor min-h-36 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 py-2.5 text-sm font-semibold leading-6 text-clinical-dark outline-none focus:border-clinical-blue/45"
+                data-placeholder="Olá {nome_cliente}! Sua agendamento está confirmada…"
+                className="qr-editor min-h-36 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 py-2.5 text-sm font-semibold leading-6 text-ebot-dark outline-none focus:border-ebot-primary/45"
               />
               {detectedVariables.length > 0 ? (
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-extrabold text-clinical-muted">Detectadas no texto:</span>
+                  <span className="text-[10px] font-extrabold text-ebot-muted">Detectadas no texto:</span>
                   {detectedVariables.map((variable) => (
-                    <span key={variable} className="flex items-center gap-1 rounded-lg bg-clinical-blue/[0.08] px-2 py-0.5 text-[10px] font-extrabold text-clinical-blueText"><Braces className="size-3" />{`{{${variable}}}`}</span>
+                    <span key={variable} className="flex items-center gap-1 rounded-lg bg-ebot-primary/[0.08] px-2 py-0.5 text-[10px] font-extrabold text-ebot-primaryText"><Braces className="size-3" />{`{{${variable}}}`}</span>
                   ))}
                 </div>
               ) : null}
-              <div className="mt-3 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/20 p-3">
-                <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-clinical-slate"><Sparkles className="size-3.5 text-clinical-blue" />Variáveis dinâmicas</p>
+              <div className="mt-3 rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/20 p-3">
+                <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-ebot-slate"><Sparkles className="size-3.5 text-ebot-primary" />Variáveis dinâmicas</p>
                 <div className="mt-2 space-y-2.5">
                   {VARIABLE_GROUPS.map((group) => (
                     <div key={group.label}>
-                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-clinical-muted">{group.label}</p>
+                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-ebot-muted">{group.label}</p>
                       <div className="mt-1 flex flex-wrap gap-1.5">
                         {group.variables.map((variable) => (
                           <button
@@ -264,10 +252,10 @@ export function QuickRepliesPage() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-2.5 text-[10px] font-bold leading-4 text-clinical-muted">Clique para inserir na posição do cursor ou arraste até o texto. O bot substitui cada variável pelo dado real do paciente no momento do envio.</p>
+                <p className="mt-2.5 text-[10px] font-bold leading-4 text-ebot-muted">Clique para inserir na posição do cursor ou arraste até o texto. O bot substitui cada variável pelo dado real do cliente no momento do envio.</p>
               </div>
             </div>
-            <div className="flex justify-end gap-2 border-t border-clinical-border/[0.10] pt-4">
+            <div className="flex justify-end gap-2 border-t border-ebot-border/[0.10] pt-4">
               <Button variant="ghost" onClick={() => setEditing(null)}>Cancelar</Button>
               <Button onClick={save}>{editing.id ? "Salvar alterações" : "Criar resposta"}</Button>
             </div>

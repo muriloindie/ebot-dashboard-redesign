@@ -38,9 +38,9 @@ import { cn } from "@/lib/cn";
 const ALL = "Todas";
 
 const kbStatusMeta: Record<KnowledgeBase["status"], { label: string; dot: string; chip: string }> = {
-  indexed: { label: "Indexada", dot: "bg-clinical-green", chip: "bg-clinical-green/[0.12] text-clinical-green" },
-  syncing: { label: "Sincronizando", dot: "bg-clinical-blue", chip: "bg-clinical-blue/[0.10] text-clinical-blueText" },
-  error: { label: "Erro de indexação", dot: "bg-clinical-red", chip: "bg-clinical-red/[0.12] text-clinical-red" }
+  indexed: { label: "Indexada", dot: "bg-ebot-green", chip: "bg-ebot-green/[0.12] text-ebot-green" },
+  syncing: { label: "Sincronizando", dot: "bg-ebot-primary", chip: "bg-ebot-primary/[0.10] text-ebot-primaryText" },
+  error: { label: "Erro de indexação", dot: "bg-ebot-red", chip: "bg-ebot-red/[0.12] text-ebot-red" }
 };
 
 const kindVisuals: Record<KbFileKind, { icon: typeof FileText; label: string }> = {
@@ -54,9 +54,9 @@ const kindVisuals: Record<KbFileKind, { icon: typeof FileText; label: string }> 
 };
 
 const graphKindColor: Record<KbGraphNode["kind"], string> = {
-  entidade: "#3A9DCA",
-  conceito: "#4CB782",
-  regra: "#F2A34D"
+  entidade: "#6B942E",
+  conceito: "#A9D16C",
+  regra: "#C97F12"
 };
 
 function KBGraph({ base, className }: { base: KnowledgeBase; className?: string }) {
@@ -109,25 +109,25 @@ function FileRow({ file, onDelete }: FileRowProps) {
   const visual = kindVisuals[file.kind];
   const Icon = visual.icon;
   return (
-    <li className="flex items-center gap-3 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 px-3 py-2.5">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-clinical-blue/[0.08] text-clinical-blueText">
+    <li className="flex items-center gap-3 rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 px-3 py-2.5">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ebot-primary/[0.08] text-ebot-primaryText">
         <Icon className="size-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-extrabold text-clinical-dark">{file.name}</p>
-        <p className="text-[11px] font-bold text-clinical-muted">
+        <p className="truncate text-[13px] font-extrabold text-ebot-dark">{file.name}</p>
+        <p className="text-[11px] font-bold text-ebot-muted">
           {visual.label} · {file.size} · {file.chunks} chunks · {file.uploadedBy} · {file.updatedAt}
         </p>
       </div>
       <span
         className={cn(
           "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold",
-          file.status === "indexed" ? "bg-clinical-green/[0.12] text-clinical-green" : file.status === "processing" ? "bg-clinical-blue/[0.10] text-clinical-blueText" : "bg-clinical-red/[0.12] text-clinical-red"
+          file.status === "indexed" ? "bg-ebot-green/[0.12] text-ebot-green" : file.status === "processing" ? "bg-ebot-primary/[0.10] text-ebot-primaryText" : "bg-ebot-red/[0.12] text-ebot-red"
         )}
       >
         {file.status === "indexed" ? "Indexado" : file.status === "processing" ? "Processando" : "Erro"}
       </span>
-      <Button variant="ghost" size="sm" aria-label={`Excluir ${file.name}`} onClick={() => onDelete(file)}><Trash2 className="size-4 text-clinical-red" /></Button>
+      <Button variant="ghost" size="sm" aria-label={`Excluir ${file.name}`} onClick={() => onDelete(file)}><Trash2 className="size-4 text-ebot-red" /></Button>
     </li>
   );
 }
@@ -166,7 +166,7 @@ export function KnowledgeBasePage() {
     return [
       { id: "bases", label: "Bases indexadas", value: String(bases.length), hint: `${bases.filter((base) => base.status === "indexed").length} saudáveis`, tone: "blue", icon: Database },
       { id: "files", label: "Arquivos indexados", value: String(indexedFiles), hint: "prontos para o bot", tone: "green", icon: BookOpen },
-      { id: "queries", label: "Consultas (30 dias)", value: queries.toLocaleString("pt-BR"), hint: "feitas pelos agentes", tone: "teal", icon: Sparkles },
+      { id: "queries", label: "Agendamentos (30 dias)", value: queries.toLocaleString("pt-BR"), hint: "feitas pelos agentes", tone: "teal", icon: Sparkles },
       { id: "agents", label: "Agentes vinculados", value: String(new Set(bases.flatMap((base) => base.agents)).size), hint: "usam estas bases", tone: "orange", icon: BrainCircuit }
     ];
   }, [bases]);
@@ -300,7 +300,7 @@ export function KnowledgeBasePage() {
       <PageHeader
         eyebrow="Automação / Conhecimento"
         title="Base de conhecimento"
-        description="Documentos, protocolos e regras que o bot consulta para responder com precisão. Cada base você controla acesso, indexação e os agentes que podem usá-la."
+        description="Documentos, protocolos e regras que o bot agendamento para responder com precisão. Cada base você controla acesso, indexação e os agentes que podem usá-la."
         action={<Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />Nova base</Button>}
       />
 
@@ -320,7 +320,7 @@ export function KnowledgeBasePage() {
             const Icon = visual.icon;
             const status = kbStatusMeta[base.status];
             return (
-              <article key={base.id} className="flex flex-col rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/80 p-5 shadow-[0_8px_24px_rgba(38,53,50,0.04)] transition hover:border-clinical-blue/25 hover:shadow-clinical">
+              <article key={base.id} className="flex flex-col rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/80 p-5 shadow-[0_8px_24px_rgba(4,27,21,0.04)] transition hover:border-ebot-primary/25 hover:shadow-ebot">
                 <div className="flex items-start justify-between gap-3">
                   <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl", toneChip[visual.tone])}>
                     <Icon className="size-5" />
@@ -330,29 +330,29 @@ export function KnowledgeBasePage() {
                     {status.label}
                   </span>
                 </div>
-                <h2 className="mt-3 text-base font-extrabold tracking-tight text-clinical-dark">{base.name}</h2>
-                <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-clinical-muted">{base.description}</p>
+                <h2 className="mt-3 text-base font-extrabold tracking-tight text-ebot-dark">{base.name}</h2>
+                <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-ebot-muted">{base.description}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
                   <CategoryChip category={base.category} kind="kb" />
-                  <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-slate">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-slate">
                     <BookOpen className="size-3" />
                     {base.files.length} arquivos
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-slate">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-slate">
                     <Sparkles className="size-3" />
-                    {base.queries30d.toLocaleString("pt-BR")} consultas
+                    {base.queries30d.toLocaleString("pt-BR")} agendamentos
                   </span>
                 </div>
-                <div className="mt-4 h-36 overflow-hidden rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-2">
+                <div className="mt-4 h-36 overflow-hidden rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-2">
                   <KBGraph base={base} />
                 </div>
-                <div className="mt-4 flex items-center justify-between gap-2 border-t border-clinical-border/[0.10] pt-3">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-clinical-muted">
+                <div className="mt-4 flex items-center justify-between gap-2 border-t border-ebot-border/[0.10] pt-3">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-ebot-muted">
                     <Users className="size-3.5" />
                     {base.agents.length} agentes
                   </span>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-clinical-muted">
-                    {base.access.classification === "sensivel" ? <Lock className="size-3.5 text-clinical-orange" /> : <ShieldCheck className="size-3.5 text-clinical-green" />}
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-ebot-muted">
+                    {base.access.classification === "sensivel" ? <Lock className="size-3.5 text-ebot-orange" /> : <ShieldCheck className="size-3.5 text-ebot-green" />}
                     {base.access.classification === "sensivel" ? "Sensível" : "Interna"}
                   </span>
                   <Button variant="secondary" size="sm" onClick={() => setSelected(base)}>Gerenciar</Button>
@@ -372,21 +372,21 @@ export function KnowledgeBasePage() {
                 <span className={cn("size-1.5 rounded-full", kbStatusMeta[selected.status].dot, selected.status === "syncing" && "animate-pulse")} />
                 {kbStatusMeta[selected.status].label}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-slate"><Sparkles className="size-3" />{selected.queries30d.toLocaleString("pt-BR")} consultas em 30 dias</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-slate"><Sparkles className="size-3" />{selected.queries30d.toLocaleString("pt-BR")} agendamentos em 30 dias</span>
             </div>
 
             <section>
-              <h3 className="mb-2 text-sm font-extrabold text-clinical-dark">Grafo de conhecimento</h3>
-              <div className="rounded-3xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-4">
+              <h3 className="mb-2 text-sm font-extrabold text-ebot-dark">Grafo de conhecimento</h3>
+              <div className="rounded-3xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-4">
                 <div className="h-64">
                   <KBGraph base={selected} className="h-full w-full" />
                 </div>
                 {selected.graph.nodes.length === 0 ? (
-                  <p className="mt-2 text-[12px] font-bold text-clinical-muted">O grafo é gerado automaticamente na indexação dos arquivos.</p>
+                  <p className="mt-2 text-[12px] font-bold text-ebot-muted">O grafo é gerado automaticamente na indexação dos arquivos.</p>
                 ) : (
                   <div className="mt-2 flex flex-wrap gap-4">
                     {(["entidade", "conceito", "regra"] as const).map((kind) => (
-                      <span key={kind} className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-clinical-slate">
+                      <span key={kind} className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-ebot-slate">
                         <span className="size-2.5 rounded-full" style={{ backgroundColor: graphKindColor[kind] }} />
                         {kind === "entidade" ? "Entidade" : kind === "conceito" ? "Conceito" : "Regra"}
                       </span>
@@ -398,13 +398,13 @@ export function KnowledgeBasePage() {
 
             <section>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-extrabold text-clinical-dark">Arquivos indexados ({selected.files.length})</h3>
+                <h3 className="text-sm font-extrabold text-ebot-dark">Arquivos indexados ({selected.files.length})</h3>
                 <Button size="sm" variant="secondary" onClick={() => setUploadBase(selected)}><Upload className="size-3.5" />Enviar arquivo</Button>
               </div>
               {selected.files.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-clinical-border/[0.18] bg-clinical-surfaceMuted/30 px-6 py-10 text-center">
-                  <span className="flex size-12 items-center justify-center rounded-2xl bg-clinical-blue/[0.10] text-clinical-blue"><FolderOpen className="size-5" /></span>
-                  <p className="max-w-sm text-[13px] font-bold leading-5 text-clinical-muted">Nenhum arquivo ainda. Envie documentos, planilhas ou markdown — o bot passa a consultá-los após a indexação.</p>
+                <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-ebot-border/[0.18] bg-ebot-surfaceMuted/30 px-6 py-10 text-center">
+                  <span className="flex size-12 items-center justify-center rounded-2xl bg-ebot-primary/[0.10] text-ebot-primary"><FolderOpen className="size-5" /></span>
+                  <p className="max-w-sm text-[13px] font-bold leading-5 text-ebot-muted">Nenhum arquivo ainda. Envie documentos, planilhas ou markdown — o bot passa a consultá-los após a indexação.</p>
                   <Button size="sm" onClick={() => setUploadBase(selected)}><Upload className="size-3.5" />Enviar primeiro arquivo</Button>
                 </div>
               ) : (
@@ -415,36 +415,36 @@ export function KnowledgeBasePage() {
             </section>
 
             <section className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-4">
-                <h3 className="flex items-center gap-1.5 text-sm font-extrabold text-clinical-dark"><Database className="size-4 text-clinical-blue" />Chunking</h3>
+              <div className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-4">
+                <h3 className="flex items-center gap-1.5 text-sm font-extrabold text-ebot-dark"><Database className="size-4 text-ebot-primary" />Chunking</h3>
                 <dl className="mt-3 space-y-1.5 text-[13px]">
-                  <div className="flex justify-between"><dt className="font-bold text-clinical-muted">Estratégia</dt><dd className="font-extrabold text-clinical-dark">{selected.chunking.strategy}</dd></div>
-                  <div className="flex justify-between"><dt className="font-bold text-clinical-muted">Tamanho</dt><dd className="font-extrabold text-clinical-dark">{selected.chunking.size} tokens</dd></div>
-                  <div className="flex justify-between"><dt className="font-bold text-clinical-muted">Sobreposição</dt><dd className="font-extrabold text-clinical-dark">{selected.chunking.overlap} tokens</dd></div>
+                  <div className="flex justify-between"><dt className="font-bold text-ebot-muted">Estratégia</dt><dd className="font-extrabold text-ebot-dark">{selected.chunking.strategy}</dd></div>
+                  <div className="flex justify-between"><dt className="font-bold text-ebot-muted">Tamanho</dt><dd className="font-extrabold text-ebot-dark">{selected.chunking.size} tokens</dd></div>
+                  <div className="flex justify-between"><dt className="font-bold text-ebot-muted">Sobreposição</dt><dd className="font-extrabold text-ebot-dark">{selected.chunking.overlap} tokens</dd></div>
                 </dl>
               </div>
-              <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-4">
-                <h3 className="flex items-center gap-1.5 text-sm font-extrabold text-clinical-dark"><ShieldCheck className="size-4 text-clinical-green" />Acesso e agentes</h3>
+              <div className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-4">
+                <h3 className="flex items-center gap-1.5 text-sm font-extrabold text-ebot-dark"><ShieldCheck className="size-4 text-ebot-green" />Acesso e agentes</h3>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {selected.access.roles.map((role) => (
-                    <span key={role} className="rounded-full bg-clinical-blue/[0.08] px-2.5 py-1 text-[11px] font-extrabold text-clinical-blueText">{role}</span>
+                    <span key={role} className="rounded-full bg-ebot-primary/[0.08] px-2.5 py-1 text-[11px] font-extrabold text-ebot-primaryText">{role}</span>
                   ))}
                   {selected.access.users.map((user) => (
-                    <span key={user} className="rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-slate">{user}</span>
+                    <span key={user} className="rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-slate">{user}</span>
                   ))}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {selected.agents.map((agent) => (
-                    <span key={agent} className="inline-flex items-center gap-1 rounded-full bg-clinical-teal/[0.10] px-2.5 py-1 text-[11px] font-extrabold text-clinical-teal"><BrainCircuit className="size-3" />{agent}</span>
+                    <span key={agent} className="inline-flex items-center gap-1 rounded-full bg-ebot-teal/[0.10] px-2.5 py-1 text-[11px] font-extrabold text-ebot-teal"><BrainCircuit className="size-3" />{agent}</span>
                   ))}
                 </div>
               </div>
             </section>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-clinical-border/[0.10] pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ebot-border/[0.10] pt-4">
               <div className="flex items-center gap-2">
-                <p className="text-[11px] font-bold text-clinical-muted">Última atualização: {selected.updatedAt}</p>
-                <Button variant="ghost" size="sm" className="text-clinical-red hover:bg-clinical-red/[0.08] hover:text-clinical-red" onClick={() => deleteBase(selected)}>Excluir base</Button>
+                <p className="text-[11px] font-bold text-ebot-muted">Última atualização: {selected.updatedAt}</p>
+                <Button variant="ghost" size="sm" className="text-ebot-red hover:bg-ebot-red/[0.08] hover:text-ebot-red" onClick={() => deleteBase(selected)}>Excluir base</Button>
               </div>
               <Button onClick={() => syncBase(selected)} disabled={syncing === selected.id}>
                 <RefreshCcw className={cn("size-4", syncing === selected.id && "animate-spin")} />
@@ -458,21 +458,21 @@ export function KnowledgeBasePage() {
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nova base de conhecimento" eyebrow="Automação / Conhecimento" description="Configure a base antes de enviar os primeiros documentos." icon={Database} className="max-w-xl">
         <div className="space-y-4">
           <div>
-            <label htmlFor="kb-name" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Nome</label>
-            <input id="kb-name" value={create.name} onChange={(event) => setCreate({ ...create, name: event.target.value })} placeholder="Ex.: Políticas da unidade" className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
+            <label htmlFor="kb-name" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Nome</label>
+            <input id="kb-name" value={create.name} onChange={(event) => setCreate({ ...create, name: event.target.value })} placeholder="Ex.: Políticas da filial" className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="kb-category" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Categoria</label>
-              <select id="kb-category" value={create.category} onChange={(event) => setCreate({ ...create, category: event.target.value as KbCategory })} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
-                {["Protocolos", "Convênios", "Exames", "Políticas", "Geral"].map((item) => <option key={item}>{item}</option>)}
+              <label htmlFor="kb-category" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Categoria</label>
+              <select id="kb-category" value={create.category} onChange={(event) => setCreate({ ...create, category: event.target.value as KbCategory })} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
+                {["Protocolos", "Parcerias", "Pedidos", "Políticas", "Geral"].map((item) => <option key={item}>{item}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="kb-classification" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Classificação</label>
+              <label htmlFor="kb-classification" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Classificação</label>
               <div className="flex gap-2">
                 {(["interna", "sensivel"] as const).map((classification) => (
-                  <button key={classification} type="button" onClick={() => setCreate({ ...create, classification })} className={cn("flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl border text-xs font-extrabold transition", create.classification === classification ? "border-clinical-blue/40 bg-clinical-blue/[0.10] text-clinical-blueText" : "border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 text-clinical-muted")}>
+                  <button key={classification} type="button" onClick={() => setCreate({ ...create, classification })} className={cn("flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl border text-xs font-extrabold transition", create.classification === classification ? "border-ebot-primary/40 bg-ebot-primary/[0.10] text-ebot-primaryText" : "border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 text-ebot-muted")}>
                     {classification === "sensivel" ? <Lock className="size-3.5" /> : <ShieldCheck className="size-3.5" />}
                     {classification === "sensivel" ? "Sensível" : "Interna"}
                   </button>
@@ -481,39 +481,39 @@ export function KnowledgeBasePage() {
             </div>
           </div>
           <div>
-            <label htmlFor="kb-description" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Descrição</label>
-            <textarea id="kb-description" value={create.description} onChange={(event) => setCreate({ ...create, description: event.target.value })} rows={3} placeholder="O que o bot deve responder usando esta base?" className="w-full resize-none rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 py-2.5 text-sm font-semibold leading-6 text-clinical-dark outline-none focus:border-clinical-blue/45" />
+            <label htmlFor="kb-description" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Descrição</label>
+            <textarea id="kb-description" value={create.description} onChange={(event) => setCreate({ ...create, description: event.target.value })} rows={3} placeholder="O que o bot deve responder usando esta base?" className="w-full resize-none rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 py-2.5 text-sm font-semibold leading-6 text-ebot-dark outline-none focus:border-ebot-primary/45" />
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="sm:col-span-1">
-              <label htmlFor="kb-strategy" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Estratégia de chunking</label>
-              <select id="kb-strategy" value={create.strategy} onChange={(event) => setCreate({ ...create, strategy: event.target.value })} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45">
+              <label htmlFor="kb-strategy" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Estratégia de chunking</label>
+              <select id="kb-strategy" value={create.strategy} onChange={(event) => setCreate({ ...create, strategy: event.target.value })} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45">
                 {["Por seção do documento", "Por linha da tabela", "Por parágrafo", "Comprimento fixo"].map((item) => <option key={item}>{item}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="kb-size" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Tamanho (tokens)</label>
-              <input id="kb-size" type="number" min={128} max={1024} step={64} value={create.size} onChange={(event) => setCreate({ ...create, size: Number(event.target.value) })} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
+              <label htmlFor="kb-size" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Tamanho (tokens)</label>
+              <input id="kb-size" type="number" min={128} max={1024} step={64} value={create.size} onChange={(event) => setCreate({ ...create, size: Number(event.target.value) })} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45" />
             </div>
             <div>
-              <label htmlFor="kb-overlap" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Sobreposição</label>
-              <input id="kb-overlap" type="number" min={0} max={256} step={16} value={create.overlap} onChange={(event) => setCreate({ ...create, overlap: Number(event.target.value) })} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surfaceMuted/45 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
+              <label htmlFor="kb-overlap" className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Sobreposição</label>
+              <input id="kb-overlap" type="number" min={0} max={256} step={16} value={create.overlap} onChange={(event) => setCreate({ ...create, overlap: Number(event.target.value) })} className="h-11 w-full rounded-2xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-3 text-sm font-semibold text-ebot-dark outline-none focus:border-ebot-primary/45" />
             </div>
           </div>
           <fieldset>
-            <legend className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Perfis com acesso de leitura</legend>
+            <legend className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Perfis com acesso de leitura</legend>
             <div className="flex flex-wrap gap-1.5">
               {automationRoles.map((role) => {
                 const active = create.roles.includes(role);
                 return (
-                  <button key={role} type="button" onClick={() => setCreate({ ...create, roles: active ? create.roles.filter((item) => item !== role) : [...create.roles, role] })} className={cn("rounded-full px-3 py-1.5 text-[11px] font-extrabold transition", active ? "bg-clinical-blue/[0.10] text-clinical-blueText ring-1 ring-clinical-blue/30" : "bg-clinical-surfaceMuted text-clinical-muted hover:text-clinical-dark")}>
+                  <button key={role} type="button" onClick={() => setCreate({ ...create, roles: active ? create.roles.filter((item) => item !== role) : [...create.roles, role] })} className={cn("rounded-full px-3 py-1.5 text-[11px] font-extrabold transition", active ? "bg-ebot-primary/[0.10] text-ebot-primaryText ring-1 ring-ebot-primary/30" : "bg-ebot-surfaceMuted text-ebot-muted hover:text-ebot-dark")}>
                     {role}
                   </button>
                 );
               })}
             </div>
           </fieldset>
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.10] pt-4">
+          <div className="flex justify-end gap-2 border-t border-ebot-border/[0.10] pt-4">
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancelar</Button>
             <Button onClick={createBase}><Plus className="size-4" />Criar base</Button>
           </div>
@@ -528,22 +528,22 @@ export function KnowledgeBasePage() {
             onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={(event) => { event.preventDefault(); setDragging(false); if (event.dataTransfer.files[0]) pickUploaded(event.dataTransfer.files[0]); }}
-            className={cn("flex w-full flex-col items-center gap-3 rounded-3xl border-2 border-dashed px-6 py-10 text-center transition", dragging ? "border-clinical-blue/60 bg-clinical-blue/[0.06]" : "border-clinical-border/[0.18] bg-clinical-surfaceMuted/30 hover:border-clinical-blue/40 hover:bg-clinical-blue/[0.04]")}
+            className={cn("flex w-full flex-col items-center gap-3 rounded-3xl border-2 border-dashed px-6 py-10 text-center transition", dragging ? "border-ebot-primary/60 bg-ebot-primary/[0.06]" : "border-ebot-border/[0.18] bg-ebot-surfaceMuted/30 hover:border-ebot-primary/40 hover:bg-ebot-primary/[0.04]")}
           >
-            <span className={cn("flex size-14 items-center justify-center rounded-2xl transition", dragging || uploadName ? "bg-clinical-blue text-white" : "bg-clinical-blue/[0.10] text-clinical-blue")}>
+            <span className={cn("flex size-14 items-center justify-center rounded-2xl transition", dragging || uploadName ? "bg-ebot-primary text-ebot-charcoal" : "bg-ebot-primary/[0.10] text-ebot-primary")}>
               {uploadName ? <Undo2 className="size-6" /> : <Upload className="size-6" />}
             </span>
             <div>
-              <p className="text-sm font-extrabold text-clinical-dark">{uploadName || "Arraste um arquivo ou clique para selecionar"}</p>
-              <p className="mt-1 text-[12px] font-bold text-clinical-muted">PDF, DOCX, XLSX, Markdown, imagens e links — até 25 MB</p>
+              <p className="text-sm font-extrabold text-ebot-dark">{uploadName || "Arraste um arquivo ou clique para selecionar"}</p>
+              <p className="mt-1 text-[12px] font-bold text-ebot-muted">PDF, DOCX, XLSX, Markdown, imagens e links — até 25 MB</p>
             </div>
             <input ref={inputRef} type="file" className="hidden" onChange={(event) => { const picked = event.target.files?.[0]; if (picked) pickUploaded(picked); }} />
           </button>
-          <p className="flex items-start gap-1.5 text-[11px] font-bold leading-4 text-clinical-muted">
-            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-clinical-blue" />
+          <p className="flex items-start gap-1.5 text-[11px] font-bold leading-4 text-ebot-muted">
+            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-ebot-primary" />
             O arquivo também entra no drive central correspondente a esta base, com retenção &quot;até remoção da base&quot;.
           </p>
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.10] pt-4">
+          <div className="flex justify-end gap-2 border-t border-ebot-border/[0.10] pt-4">
             <Button variant="ghost" onClick={() => { setUploadBase(null); setUploadName(""); }}>Cancelar</Button>
             <Button onClick={confirmUpload} disabled={!uploadName}><Upload className="size-4" />Enviar e indexar</Button>
           </div>

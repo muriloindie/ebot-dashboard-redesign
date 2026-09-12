@@ -2,12 +2,12 @@ import { Camera, Globe, Mail, MessageCircle, MessageSquare, Phone } from "lucide
 import { cn } from "@/lib/cn";
 
 const channels = {
-  WhatsApp: { icon: MessageCircle, className: "bg-clinical-whatsapp/10 text-clinical-whatsapp" },
-  Instagram: { icon: Camera, className: "bg-clinical-blue/10 text-clinical-blue" },
-  "E-mail": { icon: Mail, className: "bg-clinical-teal/10 text-clinical-teal" },
-  Telefone: { icon: Phone, className: "bg-clinical-orange/10 text-clinical-orange" },
-  Site: { icon: Globe, className: "bg-clinical-green/10 text-clinical-green" },
-  Webchat: { icon: MessageSquare, className: "bg-clinical-blue/10 text-clinical-blue" }
+  WhatsApp: { icon: MessageCircle, className: "bg-ebot-whatsapp/10 text-ebot-whatsapp" },
+  Instagram: { icon: Camera, className: "bg-ebot-primary/10 text-ebot-primary" },
+  "E-mail": { icon: Mail, className: "bg-ebot-teal/10 text-ebot-teal" },
+  Telefone: { icon: Phone, className: "bg-ebot-orange/10 text-ebot-orange" },
+  Site: { icon: Globe, className: "bg-ebot-green/10 text-ebot-green" },
+  Webchat: { icon: MessageSquare, className: "bg-ebot-primary/10 text-ebot-primary" }
 } as const;
 
 export function ChannelIcon({ channel, size = "sm", className }: { channel: string; size?: "sm" | "md"; className?: string }) {

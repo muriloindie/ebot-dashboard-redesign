@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-const routes = ["/atendimentos", "/agenda", "/pacientes", "/contatos", "/protocolos", "/relacionamentos", "/chat-interno", "/tarefas", "/kanban"];
+const routes = ["/atendimentos", "/agenda", "/contatos", "/protocolos", "/chat-interno", "/tarefas", "/kanban", "/crm"];
 const secondaryRoutes = ["/canais", "/tags", "/arquivos", "/templates", "/respostas-rapidas", "/openai", "/fluxos-atendimento", "/base-conhecimento", "/campanhas", "/campanhas/listas", "/campanhas/configuracoes", "/setores", "/filas", "/usuarios", "/permissoes", "/integracoes", "/api", "/financeiro", "/configuracoes", "/ajuda", "/perfil"];
 
 test.describe("Semana 3", () => {
@@ -20,18 +20,24 @@ test.describe("Semana 3", () => {
   });
 
   test("rotas antigas redirecionam para as novas", async ({ page }) => {
+    test.setTimeout(120000);
     const redirects: Record<string, string> = {
       "/tickets": "/atendimentos",
       "/contacts": "/contatos",
       "/protocols": "/protocolos",
-      "/ticket-contact-origins": "/relacionamentos",
+      "/ticket-contact-origins": "/contatos",
       "/chats": "/chat-interno",
-      "/todolist": "/tarefas"
+      "/todolist": "/tarefas",
+      "/clientes": "/contatos",
+      "/relacionamentos": "/contatos"
     };
     for (const [from, to] of Object.entries(redirects)) {
-      await page.goto(from);
-      await expect(page).toHaveURL(new RegExp(to.replace("/", "\\/") + "$"));
+      await page.goto(from, { waitUntil: "domcontentloaded" });
+      await expect(page).toHaveURL(new RegExp(to.replace("/", "\\/") + "$"), { timeout: 30000 });
     }
+
+    await page.goto("/kanban/configuracoes", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/configuracoes\?secao=kanban$/, { timeout: 30000 });
   });
 
   test("login mantém estrutura acessível", async ({ page }) => {
@@ -43,7 +49,7 @@ test.describe("Semana 3", () => {
   for (const route of routes) {
     test(`${route} renderiza com título e heading principal`, async ({ page }) => {
       await page.goto(route);
-      await expect(page.locator("main.clinical-canvas")).toBeVisible();
+      await expect(page.locator("main.ebot-canvas")).toBeVisible();
       await expect(page.locator("h1")).toHaveCount(1);
     });
   }
@@ -58,7 +64,7 @@ test.describe("Semana 3", () => {
   for (const route of secondaryRoutes) {
     test(`${route} renderiza com título e heading principal`, async ({ page }) => {
       await page.goto(route);
-      await expect(page.locator("main.clinical-canvas")).toBeVisible();
+      await expect(page.locator("main.ebot-canvas")).toBeVisible();
       await expect(page.locator("h1")).toHaveCount(1);
     });
   }
@@ -66,7 +72,7 @@ test.describe("Semana 3", () => {
   test("canais permite adicionar uma conexão local", async ({ page }) => {
     await page.goto("/canais");
     await page.getByRole("button", { name: "Conectar canal" }).click();
-    await page.getByLabel("Nome do canal").fill("WhatsApp Unidade Leste");
+    await page.getByLabel("Nome do canal").fill("WhatsApp Filial Leste");
     await page.getByLabel("Número").fill("+55 11 99999-1111");
     await page.getByRole("button", { name: "Adicionar canal" }).click();
     await expect(page.getByText("Canal adicionado à fila de conexão.")).toBeVisible();

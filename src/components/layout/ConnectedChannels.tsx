@@ -16,8 +16,8 @@ const statusClasses = {
     dot: "bg-[#25D366]"
   },
   warning: {
-    pill: "border-clinical-orange/35 bg-clinical-orange/[0.14] text-[#A86500] dark:text-[#FFC66D]",
-    dot: "bg-clinical-orange"
+    pill: "border-ebot-orange/35 bg-ebot-orange/[0.14] text-[#A86500] dark:text-[#FFC66D]",
+    dot: "bg-ebot-orange"
   },
   offline: {
     pill: "border-slate-300 bg-slate-100 text-slate-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300",
@@ -91,31 +91,31 @@ export function ConnectedChannels({ onNavigate }: ConnectedChannelsProps) {
       {open ? (
         <div
           ref={panelRef}
-          className="fixed left-3 right-3 top-[76px] z-50 max-h-[calc(100vh-96px)] overflow-y-auto rounded-[26px] border border-clinical-border/[0.14] bg-clinical-surface/[0.96] p-4 shadow-[0_24px_70px_rgba(38,53,50,0.16)] backdrop-blur-2xl dark:border-white/[0.08] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[400px] sm:max-w-[calc(100vw-24px)] sm:origin-top-right sm:overflow-visible"
+          className="fixed left-3 right-3 top-[76px] z-50 max-h-[calc(100vh-96px)] overflow-y-auto rounded-[26px] border border-ebot-border/[0.14] bg-ebot-surface/[0.96] p-4 shadow-[0_24px_70px_rgba(4,27,21,0.16)] backdrop-blur-2xl dark:border-white/[0.08] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[400px] sm:max-w-[calc(100vw-24px)] sm:origin-top-right sm:overflow-visible"
         >
-          <span className="absolute -top-2 right-8 hidden size-4 rotate-45 rounded-sm border-l border-t border-clinical-border/[0.14] bg-clinical-surface/[0.96] dark:border-white/[0.08] sm:block" />
+          <span className="absolute -top-2 right-8 hidden size-4 rotate-45 rounded-sm border-l border-t border-ebot-border/[0.14] bg-ebot-surface/[0.96] dark:border-white/[0.08] sm:block" />
           <div className="relative z-10">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <p className="text-base font-extrabold text-clinical-dark">Canais WhatsApp</p>
-                <p className="mt-1 text-[13px] font-semibold text-clinical-muted">Números conectados e tipo de API.</p>
+                <p className="text-base font-extrabold text-ebot-dark">Canais WhatsApp</p>
+                <p className="mt-1 text-[13px] font-semibold text-ebot-muted">Números conectados e tipo de API.</p>
               </div>
-              <span className="rounded-full border border-clinical-whatsapp/20 bg-clinical-whatsapp/[0.10] px-2.5 py-1 text-[13px] font-extrabold text-clinical-whatsapp">
+              <span className="rounded-full border border-ebot-whatsapp/20 bg-ebot-whatsapp/[0.10] px-2.5 py-1 text-[13px] font-extrabold text-ebot-whatsapp">
                 {summary.detail}
               </span>
             </div>
 
             <div className="space-y-2">
               {whatsappChannels.map((channel) => (
-                <div key={channel.id} className={cn("rounded-2xl border border-clinical-border/[0.10] p-3 transition hover:bg-clinical-surface", channel.health === "offline" ? "bg-slate-50/80 opacity-90 dark:bg-white/[0.035]" : "bg-clinical-surfaceMuted/55")}>
+                <div key={channel.id} className={cn("rounded-2xl border border-ebot-border/[0.10] p-3 transition hover:bg-ebot-surface", channel.health === "offline" ? "bg-slate-50/80 opacity-90 dark:bg-white/[0.035]" : "bg-ebot-surfaceMuted/55")}>
                   <div className="flex items-center gap-3">
-                    <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-[inset_4px_4px_10px_rgba(38,53,50,0.04),inset_-4px_-4px_10px_rgba(255,255,255,0.45)] dark:shadow-none", channel.health === "offline" ? "bg-slate-200/70 text-slate-500 dark:bg-white/[0.06] dark:text-slate-300" : "bg-clinical-whatsapp/[0.10] text-clinical-whatsapp")}>
+                    <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-[inset_4px_4px_10px_rgba(4,27,21,0.04),inset_-4px_-4px_10px_rgba(255,255,255,0.45)] dark:shadow-none", channel.health === "offline" ? "bg-slate-200/70 text-slate-500 dark:bg-white/[0.06] dark:text-slate-300" : "bg-ebot-whatsapp/[0.10] text-ebot-whatsapp")}>
                       <WhatsAppIcon className="size-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-extrabold text-clinical-dark">{channel.name}</p>
-                      <p className="mt-0.5 text-[13px] font-bold text-clinical-slate">{channel.number}</p>
-                      <p className="mt-0.5 flex items-center gap-1.5 text-[13px] font-semibold text-clinical-muted">
+                      <p className="truncate text-sm font-extrabold text-ebot-dark">{channel.name}</p>
+                      <p className="mt-0.5 text-[13px] font-bold text-ebot-slate">{channel.number}</p>
+                      <p className="mt-0.5 flex items-center gap-1.5 text-[13px] font-semibold text-ebot-muted">
                         <ServerCog className="size-3.5" /> {channel.api}
                       </p>
                     </div>
@@ -124,7 +124,7 @@ export function ConnectedChannels({ onNavigate }: ConnectedChannelsProps) {
                         <span className={cn("size-2 rounded-full", statusClasses[channel.health].dot)} />
                         {channel.status}
                       </span>
-                      <span className="text-[12px] font-bold text-clinical-muted">sync {channel.lastSync}</span>
+                      <span className="text-[12px] font-bold text-ebot-muted">sync {channel.lastSync}</span>
                     </div>
                   </div>
                 </div>

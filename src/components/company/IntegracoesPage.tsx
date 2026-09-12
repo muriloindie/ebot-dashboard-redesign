@@ -1,352 +1,412 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AlertTriangle, CalendarClock, CalendarDays, CheckCircle2, FlaskConical, MessageCircle, PlugZap, Plus, Power, RefreshCw, Sparkles, Webhook } from "lucide-react";
-import { listIntegrations, newCompanyId, saveIntegration } from "@/lib/company/companyService";
-import type { Integration } from "@/lib/company/types";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Bot,
+  Building2,
+  Check,
+  Link2,
+  ListOrdered,
+  Pencil,
+  Plus,
+  SearchX,
+  Settings2,
+  Timer,
+  Trash2,
+  Webhook,
+  X,
+  Zap
+} from "lucide-react";
+import {
+  deleteTypebotIntegration,
+  listQueues,
+  listTypebotIntegrations,
+  saveTypebotIntegration
+} from "@/lib/company/companyService";
+import type { TypebotAgentOption, TypebotIntegration } from "@/lib/company/types";
 import { useDemo } from "@/components/state/DemoProvider";
 import { Button } from "@/components/ui/Button";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { Modal } from "@/components/ui/Modal";
-import { PageHeader } from "@/components/ui/Week1Primitives";
-import { StatStrip, type StatItem } from "@/components/ui/StatStrip";
-import { cn } from "@/lib/cn";
+import { ModalField, ModalSelect, ModalTextarea } from "@/components/ui/ModalField";
+import { PageHeader, SearchField, StatePanel, StatusBadge } from "@/components/ui/Week1Primitives";
 
-const kindMeta = {
-  whatsapp: { label: "WhatsApp", icon: MessageCircle, color: "#4CB782" },
-  google: { label: "Google", icon: CalendarClock, color: "#3A9DCA" },
-  openai: { label: "OpenAI", icon: Sparkles, color: "#5A7873" },
-  agenda: { label: "Agenda", icon: CalendarDays, color: "#E2574C" },
-  lab: { label: "Laboratório", icon: FlaskConical, color: "#F2A34D" },
-  webhook: { label: "Webhook", icon: Webhook, color: "#8E6FBD" }
-} as const;
-
-const statusMeta = {
-  connected: { label: "Conectada", chip: "bg-clinical-green/[0.12] text-clinical-green", dot: "bg-clinical-green" },
-  attention: { label: "Atenção", chip: "bg-clinical-orange/[0.12] text-clinical-orange", dot: "bg-clinical-orange animate-pulse" },
-  disconnected: { label: "Desconectada", chip: "bg-clinical-red/[0.10] text-clinical-red", dot: "bg-clinical-red" }
-} as const;
-
-type PresetField = { key: string; label: string; placeholder?: string; secret?: boolean };
-type Preset = {
-  id: string;
-  label: string;
-  hint: string;
-  kind: Integration["kind"];
-  provider: string;
-  iconColor: string;
-  scopes: string[];
-  fields: PresetField[];
-  events?: string[];
+const statusTone: Record<TypebotIntegration["status"], "green" | "orange" | "neutral"> = {
+  connected: "green",
+  attention: "orange",
+  disconnected: "neutral"
 };
 
-const PRESETS: Preset[] = [
-  {
-    id: "whatsapp-oficial",
-    label: "WhatsApp Business API (Meta)",
-    hint: "Canal oficial do WhatsApp com Cloud API",
-    kind: "whatsapp",
-    provider: "Meta Cloud API",
-    iconColor: "#4CB782",
-    scopes: ["envio e recebimento de mensagens", "template messages", "validação de número"],
-    fields: [
-      { key: "wabaId", label: "WABA ID" },
-      { key: "phoneId", label: "Phone Number ID" },
-      { key: "accessToken", label: "Token de acesso", secret: true },
-      { key: "verifyToken", label: "Verify token", secret: true }
-    ]
-  },
-  {
-    id: "whatsapp-evolution",
-    label: "WhatsApp — Evolution API",
-    hint: "API não oficial com conexão por QR code",
-    kind: "whatsapp",
-    provider: "Evolution API",
-    iconColor: "#4CB782",
-    scopes: ["envio e recebimento de mensagens", "QR code", "webhook de eventos"],
-    fields: [
-      { key: "instance", label: "Nome da instância", placeholder: "recepcao-principal" },
-      { key: "baseUrl", label: "Base URL", placeholder: "https://api.evolution.com" },
-      { key: "apiKey", label: "API key", secret: true },
-      { key: "phone", label: "Número conectado", placeholder: "55 11 91234-5678" }
-    ]
-  },
-  {
-    id: "google",
-    label: "Google Workspace",
-    hint: "Agenda, contatos e calendários da unidade",
-    kind: "google",
-    provider: "Google",
-    iconColor: "#3A9DCA",
-    scopes: ["agenda", "contatos"],
-    fields: [
-      { key: "account", label: "E-mail da conta" },
-      { key: "clientId", label: "Client ID", secret: true },
-      { key: "clientSecret", label: "Client Secret", secret: true }
-    ]
-  },
-  {
-    id: "openai",
-    label: "OpenAI",
-    hint: "IA conversacional do Ê-Bot",
-    kind: "openai",
-    provider: "OpenAI",
-    iconColor: "#5A7873",
-    scopes: ["IA conversacional"],
-    fields: [
-      { key: "model", label: "Modelo", placeholder: "gpt-4o-mini" },
-      { key: "apiKey", label: "API key", secret: true }
-    ]
-  },
-  {
-    id: "lab",
-    label: "Laboratório parceiro",
-    hint: "Resultados de exames e agendamento laboratorial",
-    kind: "lab",
-    provider: "Laboratório",
-    iconColor: "#F2A34D",
-    scopes: ["resultados de exames", "agendamento laboratorial"],
-    fields: [
-      { key: "url", label: "URL do sistema" },
-      { key: "token", label: "Token de acesso", secret: true },
-      { key: "unit", label: "Código da unidade" }
-    ]
-  },
-  {
-    id: "webhook",
-    label: "Webhook personalizado",
-    hint: "Receba eventos do Ê-Bot em qualquer sistema",
-    kind: "webhook",
-    provider: "Webhook",
-    iconColor: "#8E6FBD",
-    scopes: ["eventos configurados"],
-    events: ["message.received", "message.sent", "status.changed", "campaign.finished", "patient.created"],
-    fields: [
-      { key: "url", label: "URL do webhook", placeholder: "https://api.suaempresa.com/ebot" },
-      { key: "secret", label: "Secret (assinatura HMAC)", secret: true }
-    ]
-  }
-];
+const statusLabel: Record<TypebotIntegration["status"], string> = {
+  connected: "Conectada",
+  attention: "Atenção",
+  disconnected: "Desconectada"
+};
 
-const WEBHOOK_EVENTS = ["message.received", "message.sent", "status.changed", "campaign.finished", "patient.created"];
+function emptyAgent(queueId: string) {
+  return {
+    agentName: "",
+    companyName: "",
+    companyDescription: "",
+    businessRules: "",
+    companyContext: "",
+    extraInfo: "",
+    welcomeMessage: "",
+    queueIntegrationId: queueId,
+    options: [] as TypebotAgentOption[]
+  };
+}
+
+type Draft = Omit<TypebotIntegration, "id" | "status" | "lastSync"> & { id: string };
+
+function toDraft(integration?: TypebotIntegration, fallbackQueueId?: string): Draft {
+  return {
+    id: integration?.id ?? "",
+    name: integration?.name ?? "",
+    url: integration?.url ?? "",
+    slug: integration?.slug ?? "",
+    expireMinutes: integration?.expireMinutes ?? 30,
+    messageIntervalMs: integration?.messageIntervalMs ?? 1200,
+    finishWord: integration?.finishWord ?? "#sair",
+    restartWord: integration?.restartWord ?? "#reiniciar",
+    invalidOptionMessage: integration?.invalidOptionMessage ?? "Opção inválida. Escolha uma das alternativas enviadas.",
+    restartMessage: integration?.restartMessage ?? "Conversa reiniciada. Vamos começar de novo?",
+    agent: integration ? { ...integration.agent, options: integration.agent.options.map((option) => ({ ...option })) } : emptyAgent(fallbackQueueId ?? "")
+  };
+}
+
+function newOptionId() {
+  return `aopt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
 
 export function IntegracoesPage() {
   const { toast } = useDemo();
-  const [integrations, setIntegrations] = useState<Integration[]>(() => listIntegrations());
-  const [creating, setCreating] = useState(false);
-  const [presetId, setPresetId] = useState<Preset["id"]>("");
-  const [name, setName] = useState("");
-  const [fields, setFields] = useState<Record<string, string>>({});
-  const [events, setEvents] = useState<string[]>([]);
+  const [rows, setRows] = useState<TypebotIntegration[]>(() => listTypebotIntegrations());
+  const [queues] = useState(() => listQueues());
+  const [query, setQuery] = useState("");
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [editing, setEditing] = useState<TypebotIntegration | null>(null);
+  const [agentFor, setAgentFor] = useState<TypebotIntegration | null>(null);
+  const [agentDraft, setAgentDraft] = useState<TypebotIntegration["agent"] | null>(null);
+  const [deleting, setDeleting] = useState<TypebotIntegration | null>(null);
+  const [notice, setNotice] = useState("");
 
-  const stats: StatItem[] = useMemo(() => [
-    { id: "connected", label: "Integrações ativas", value: String(integrations.filter((item) => item.status === "connected").length), hint: `de ${integrations.length} cadastradas`, tone: "green", icon: PlugZap },
-    { id: "attention", label: "Precisam de atenção", value: String(integrations.filter((item) => item.status === "attention").length), hint: "verificar conexão", tone: "orange", icon: AlertTriangle },
-    { id: "synced", label: "Sincronização", value: "6/6", hint: "canais em tempo real", tone: "blue", icon: RefreshCw }
-  ], [integrations]);
+  useEffect(() => setRows(listTypebotIntegrations()), []);
 
-  const preset = PRESETS.find((item) => item.id === presetId);
-
-  function openCreate(presetItem: Preset) {
-    setPresetId(presetItem.id);
-    setName("");
-    setFields({});
-    setEvents(presetItem.events ? [presetItem.events[0]] : []);
+  function showNotice(message: string) {
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 3200);
   }
 
-  function create() {
-    if (!preset) return;
-    if (!name.trim()) {
-      toast("Dê um nome para a integração.", "warning");
+  const filtered = useMemo(() => {
+    return rows.filter((row) => `${row.name} ${row.url} ${row.slug} ${row.agent.agentName}`.toLowerCase().includes(query.toLowerCase()));
+  }, [rows, query]);
+
+  function queueName(id: string) {
+    return queues.find((queue) => queue.id === id)?.name ?? "—";
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setDraft(toDraft(undefined, queues[0]?.id));
+  }
+
+  function openEdit(integration: TypebotIntegration) {
+    setEditing(integration);
+    setDraft(toDraft(integration));
+  }
+
+  function save() {
+    if (!draft) return;
+    if (!draft.name.trim()) {
+      toast("Informe o nome da integração.", "warning");
       return;
     }
-    const required = preset.fields.filter((field) => !field.secret);
-    const missing = required.some((field) => !fields[field.key]?.trim());
-    if (missing) {
-      toast("Preencha os dados de conexão da integração.", "warning");
+    if (!draft.url.trim()) {
+      toast("Informe a URL do Typebot.", "warning");
       return;
     }
-    const integration: Integration = {
-      id: newCompanyId("int"),
-      name: name.trim(),
-      provider: preset.provider,
-      kind: preset.kind,
-      status: "disconnected",
-      iconColor: preset.iconColor,
-      lastSync: "—",
-      details: preset.fields.map((field) => ({
-        label: field.label,
-        value: fields[field.key]?.trim() ? (field.secret ? "••••••••" : fields[field.key].trim()) : "—"
-      })),
-      scopes: preset.events && events.length > 0 ? [...events] : preset.scopes
+    if (!draft.slug.trim()) {
+      toast("Informe o slug do Typebot.", "warning");
+      return;
+    }
+    const base = editing ?? rows.find((row) => row.id === draft.id);
+    const next: TypebotIntegration = {
+      id: editing?.id ?? `tb-${Date.now().toString(36)}`,
+      name: draft.name.trim(),
+      url: draft.url.trim(),
+      slug: draft.slug.trim(),
+      expireMinutes: Math.max(1, Math.round(draft.expireMinutes)),
+      messageIntervalMs: Math.max(0, Math.round(draft.messageIntervalMs)),
+      finishWord: draft.finishWord.trim() || "#sair",
+      restartWord: draft.restartWord.trim() || "#reiniciar",
+      invalidOptionMessage: draft.invalidOptionMessage.trim(),
+      restartMessage: draft.restartMessage.trim(),
+      status: base?.status ?? "disconnected",
+      lastSync: base?.lastSync ?? "—",
+      agent: draft.agent
     };
-    saveIntegration(integration);
-    setIntegrations(listIntegrations());
-    setCreating(false);
-    toast(`"${integration.name}" cadastrada. Conecte agora para ativar.`);
+    saveTypebotIntegration(next);
+    setRows(listTypebotIntegrations());
+    setDraft(null);
+    setEditing(null);
+    showNotice(base ? `Integração "${next.name}" atualizada.` : `Integração "${next.name}" adicionada.`);
   }
 
-  function toggleEvent(event: string) {
-    setEvents((current) => current.includes(event) ? current.filter((item) => item !== event) : [...current, event]);
+  function openAgent(integration: TypebotIntegration) {
+    setAgentFor(integration);
+    setAgentDraft({ ...integration.agent, options: integration.agent.options.map((option) => ({ ...option })) });
   }
 
-  function connect(integration: Integration) {
-    const next: Integration = { ...integration, status: "connected", lastSync: "agora" };
-    saveIntegration(next);
-    setIntegrations(listIntegrations());
-    toast(`"${integration.name}" conectada com sucesso.`);
+  function saveAgent() {
+    if (!agentFor || !agentDraft) return;
+    if (!agentDraft.agentName.trim()) {
+      toast("Informe o nome do agente.", "warning");
+      return;
+    }
+    const next: TypebotIntegration = {
+      ...agentFor,
+      agent: {
+        ...agentDraft,
+        agentName: agentDraft.agentName.trim(),
+        options: agentDraft.options
+          .filter((option) => option.identifier.trim() || option.description.trim())
+          .map((option, index) => ({ ...option, order: option.order || index + 1 }))
+      }
+    };
+    saveTypebotIntegration(next);
+    setRows(listTypebotIntegrations());
+    setAgentFor(null);
+    setAgentDraft(null);
+    showNotice(`Agente de "${next.name}" configurado com ${next.agent.options.length} opção(ões).`);
   }
 
-  function check(integration: Integration) {
-    window.setTimeout(() => {
-      const next: Integration = { ...integration, status: "connected", lastSync: "agora" };
-      saveIntegration(next);
-      setIntegrations(listIntegrations());
-      toast(`Conexão com "${integration.name}" verificada e válida.`);
-    }, 900);
-    toast(`Verificando conexão de "${integration.name}"…`);
+  function addAgentOption() {
+    if (!agentDraft) return;
+    setAgentDraft({
+      ...agentDraft,
+      options: [...agentDraft.options, { id: newOptionId(), order: agentDraft.options.length + 1, identifier: "", key: "", description: "" }]
+    });
   }
 
-  function disconnect(integration: Integration) {
-    const next: Integration = { ...integration, status: revision(integration) };
-    saveIntegration(next);
-    setIntegrations(listIntegrations());
-    toast(`"${integration.name}" desconectada. Os fluxos que a usam foram pausados.`);
+  function updateAgentOption(id: string, patch: Partial<TypebotAgentOption>) {
+    if (!agentDraft) return;
+    setAgentDraft({ ...agentDraft, options: agentDraft.options.map((option) => (option.id === id ? { ...option, ...patch } : option)) });
   }
 
-  function revision(integration: Integration): Integration["status"] {
-    return integration.status === "connected" ? "disconnected" : integration.status;
+  function removeAgentOption(id: string) {
+    if (!agentDraft) return;
+    setAgentDraft({ ...agentDraft, options: agentDraft.options.filter((option) => option.id !== id) });
   }
+
+  function toggle(integration: TypebotIntegration) {
+    const next: TypebotIntegration = {
+      ...integration,
+      status: integration.status === "connected" ? "disconnected" : "connected",
+      lastSync: "agora"
+    };
+    saveTypebotIntegration(next);
+    setRows(listTypebotIntegrations());
+    toast(next.status === "connected" ? `Integração "${next.name}" conectada.` : `Integração "${next.name}" desconectada.`);
+  }
+
+  function remove() {
+    if (!deleting) return;
+    deleteTypebotIntegration(deleting.id);
+    setRows(listTypebotIntegrations());
+    setDeleting(null);
+    showNotice(`Integração "${deleting.name}" removida.`);
+  }
+
+  const connectedCount = rows.filter((row) => row.status === "connected").length;
 
   return (
     <div className="space-y-4">
       <PageHeader
         eyebrow="Sistema / Conectores"
         title="Integrações"
-        description="Canais, agenda, IA e parceiros conectados à operação. Cada conexão define escopos de acesso que o Ê-Bot utiliza."
-        action={<Button onClick={() => { setPresetId(""); setCreating(true); }}><Plus className="size-4" />Nova integração</Button>}
+        description="Conectores Typebot da operação: expiração, ritmo de mensagens, palavras de controle e o agente que conduz cada conversa."
+        aside={<span className="inline-flex items-center gap-2 rounded-full bg-ebot-green/[0.09] px-3 py-2 text-xs font-extrabold text-ebot-green"><Webhook className="size-4" />{connectedCount} conectadas de {rows.length}</span>}
+        action={<Button onClick={openCreate}><Plus className="size-4" />Adicionar Integração</Button>}
       />
 
-      <StatStrip items={stats} />
+      {notice ? (
+        <div role="status" className="flex items-center justify-between rounded-2xl border border-ebot-green/20 bg-ebot-green/[0.08] px-4 py-3 text-sm font-bold text-ebot-green">
+          <span className="flex items-center gap-2"><Check className="size-4" />{notice}</span>
+          <button type="button" onClick={() => setNotice("")} aria-label="Fechar aviso"><X className="size-4" /></button>
+        </div>
+      ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {integrations.map((integration) => {
-          const kind = kindMeta[integration.kind];
-          const status = statusMeta[integration.status];
-          const Icon = kind.icon;
-          return (
-            <article key={integration.id} className="rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/80 p-5 shadow-[0_8px_24px_rgba(38,53,50,0.04)]">
+      <div className="w-full max-w-xs"><SearchField value={query} onChange={setQuery} placeholder="Buscar integração…" /></div>
+
+      {filtered.length === 0 ? (
+        <StatePanel icon={SearchX} title="Nenhuma integração encontrada" description="Ajuste a busca ou adicione uma integração Typebot." action={<Button size="sm" variant="secondary" onClick={openCreate}><Plus className="size-3.5" />Adicionar Integração</Button>} />
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {filtered.map((integration) => (
+            <article key={integration.id} data-integration-card data-integration-id={integration.id} className="flex flex-col rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/80 p-5 shadow-[0_8px_24px_rgba(4,27,21,0.04)] transition hover:-translate-y-0.5 hover:shadow-card">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-2xl" style={{ backgroundColor: `${integration.iconColor}22`, color: integration.iconColor }}>
-                    <Icon className="size-5" />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-clinical-dark">{integration.name}</h3>
-                    <p className="text-[11px] font-bold text-clinical-muted">{integration.provider} · sinc. {integration.lastSync}</p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-ebot-primary/[0.10] text-ebot-primaryText"><Webhook className="size-5" /></span>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-extrabold tracking-tight text-ebot-dark">{integration.name}</h2>
+                    <p className="flex items-center gap-1 truncate text-[11px] font-bold text-ebot-muted"><Link2 className="size-3 shrink-0" />{integration.slug}</p>
                   </div>
                 </div>
-                <span className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-extrabold", status.chip)}>
-                  <span className={cn("size-1.5 rounded-full", status.dot)} />
-                  {status.label}
-                </span>
+                <StatusBadge label={statusLabel[integration.status]} tone={statusTone[integration.status]} />
               </div>
 
-              <dl className="mt-4 space-y-1.5 rounded-2xl bg-clinical-surfaceMuted/30 p-3.5">
-                {integration.details.map((detail) => (
-                  <div key={detail.label} className="flex items-center justify-between gap-3 text-[12px]">
-                    <dt className="font-extrabold text-clinical-muted">{detail.label}</dt>
-                    <dd className="font-bold text-clinical-dark">{detail.value}</dd>
-                  </div>
-                ))}
+              <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 rounded-2xl border border-ebot-border/[0.10] bg-ebot-surfaceMuted/30 p-3.5">
+                <div className="col-span-2 min-w-0"><dt className="text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">URL</dt><dd className="truncate font-mono text-[12px] font-bold text-ebot-dark" title={integration.url}>{integration.url}</dd></div>
+                <div><dt className="text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Expira em</dt><dd className="mt-0.5 flex items-center gap-1 text-[12px] font-extrabold text-ebot-dark"><Timer className="size-3.5" />{integration.expireMinutes} min</dd></div>
+                <div><dt className="text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Intervalo</dt><dd className="mt-0.5 flex items-center gap-1 text-[12px] font-extrabold text-ebot-dark"><Zap className="size-3.5" />{integration.messageIntervalMs} ms</dd></div>
+                <div><dt className="text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Finalizar</dt><dd className="mt-0.5 font-mono text-[12px] font-extrabold text-ebot-dark">{integration.finishWord}</dd></div>
+                <div><dt className="text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Reiniciar</dt><dd className="mt-0.5 font-mono text-[12px] font-extrabold text-ebot-dark">{integration.restartWord}</dd></div>
               </dl>
 
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {integration.scopes.map((scope) => (
-                  <span key={scope} className="rounded-lg bg-clinical-blue/[0.08] px-2 py-1 text-[10px] font-extrabold text-clinical-blueText">{scope}</span>
-                ))}
+              <div className="mt-3 flex items-center gap-2 rounded-2xl border border-ebot-teal/[0.18] bg-ebot-teal/[0.06] px-3.5 py-2.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-ebot-teal text-white"><Bot className="size-4" /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-extrabold text-ebot-dark">{integration.agent.agentName || "Agente sem nome"}</p>
+                  <p className="truncate text-[11px] font-bold text-ebot-muted">{integration.agent.options.length} opções · fila {queueName(integration.agent.queueIntegrationId)}</p>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => openAgent(integration)}><Settings2 className="size-3.5" />Configurar agente</Button>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {integration.status === "disconnected" ? (
-                  <Button size="sm" onClick={() => connect(integration)}><PlugZap className="size-3.5" />Conectar agora</Button>
-                ) : (
-                  <>
-                    <Button size="sm" variant="secondary" onClick={() => check(integration)}><RefreshCw className="size-3.5" />Verificar conexão</Button>
-                    <Button size="sm" variant="ghost" onClick={() => disconnect(integration)}><Power className="size-3.5" />Desconectar</Button>
-                  </>
-                )}
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-ebot-border/[0.10] pt-3">
+                <Button size="sm" variant={integration.status === "connected" ? "secondary" : "primary"} onClick={() => toggle(integration)}>
+                  {integration.status === "connected" ? "Desconectar" : "Conectar"}
+                </Button>
+                <button type="button" onClick={() => openEdit(integration)} aria-label={`Editar ${integration.name}`} title="Editar integração" className="flex size-9 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-ebot-primary/10 hover:text-ebot-primary"><Pencil className="size-3.5" /></button>
+                <button type="button" onClick={() => setDeleting(integration)} aria-label={`Remover ${integration.name}`} title="Remover integração" className="flex size-9 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-red-500/10 hover:text-red-500"><Trash2 className="size-3.5" /></button>
+                <span className="ml-auto text-[11px] font-bold text-ebot-muted">sinc. {integration.lastSync}</span>
               </div>
             </article>
-          );
-        })}
-      </div>
-
-      <p className="flex items-start gap-1.5 rounded-[20px] border border-clinical-border/[0.12] bg-clinical-surface/70 px-4 py-3 text-[11px] font-bold leading-4 text-clinical-muted">
-        <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-clinical-green" />
-        A Ê-Bot mantém o webhook de mensagens registrado automaticamente. Ao desconectar um canal, os fluxos que dependem dele entram em pausa com alerta para a equipe.
-      </p>
-
-      <Modal open={creating} onClose={() => setCreating(false)} title="Nova integração" description="Escolha o tipo de conexão e preencha os dados de acesso.">
-        <div className="space-y-4">
-          <div className="grid gap-2 sm:grid-cols-2">
-            {PRESETS.map((item) => {
-              const meta = kindMeta[item.kind];
-              const Icon = meta.icon;
-              const selected = presetId === item.id;
-              return (
-                <button key={item.id} onClick={() => openCreate(item)} className={cn("rounded-2xl border p-3 text-left transition", selected ? "border-clinical-blue/60 bg-clinical-blue/[0.06]" : "border-clinical-border/[0.14] bg-clinical-surfaceMuted/35 hover:border-clinical-blue/30")}>
-                  <span className="flex items-center gap-2">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${item.iconColor}22`, color: item.iconColor }}>
-                      <Icon className="size-4" />
-                    </span>
-                    <span className="text-[12px] font-extrabold leading-tight text-clinical-dark">{item.label}</span>
-                  </span>
-                  <span className="mt-1.5 block text-[10px] font-bold leading-3.5 text-clinical-muted">{item.hint}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {preset && (
-            <div className="space-y-3 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/25 p-4">
-              <div>
-                <label htmlFor="int-name" className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Nome da integração</label>
-                <input id="int-name" autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder={`Ex.: ${preset.label}`} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface/70 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                {preset.fields.map((field) => (
-                  <div key={field.key}>
-                    <label htmlFor={`int-${field.key}`} className="mb-1.5 block text-xs font-extrabold text-clinical-slate">{field.label}</label>
-                    <input id={`int-${field.key}`} type={field.secret ? "password" : "text"} value={fields[field.key] ?? ""} onChange={(event) => setFields({ ...fields, [field.key]: event.target.value })} placeholder={field.placeholder} className="h-11 w-full rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface/70 px-3 text-sm font-semibold text-clinical-dark outline-none focus:border-clinical-blue/45" />
-                  </div>
-                ))}
-              </div>
-
-              {preset.events && (
-                <div>
-                  <p className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Eventos recebidos</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {WEBHOOK_EVENTS.map((event) => (
-                      <button key={event} onClick={() => toggleEvent(event)} className={cn("rounded-lg px-2.5 py-1 text-[11px] font-extrabold transition", events.includes(event) ? "bg-clinical-blue/[0.10] text-clinical-blueText" : "bg-clinical-surfaceMuted text-clinical-muted hover:text-clinical-slate")}>{event}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <p className="flex items-start gap-1.5 text-[11px] font-bold leading-4 text-clinical-muted">
-                <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-clinical-green" />
-                {preset.kind === "whatsapp" ? "A conexão será testada ao clicar em Conectar agora. Para a Evolution API, o QR code aparece na página de Canais." : `A integração ficará disponível com status "Desconectada" até a primeira conexão válida.`}
-              </p>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setCreating(false)}>Cancelar</Button>
-            <Button onClick={create} disabled={!preset}><Plus className="size-4" />Criar integração</Button>
-          </div>
+          ))}
         </div>
+      )}
+
+      <Modal
+        open={Boolean(draft)}
+        onClose={() => { setDraft(null); setEditing(null); }}
+        title={editing ? "Editar integração" : "Adicionar Integração"}
+        eyebrow="Sistema / Conectores"
+        description="Dados de conexão do Typebot e comportamento da conversa."
+        icon={Webhook}
+        className="max-w-2xl"
+      >
+        {draft ? (
+          <form onSubmit={(event) => { event.preventDefault(); save(); }} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ModalField label="Nome" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Ex.: Atendimento — Typebot principal" required />
+              <ModalField label="URL" icon={Link2} value={draft.url} onChange={(event) => setDraft({ ...draft, url: event.target.value })} placeholder="https://typebot.suaempresa.com.br" required />
+              <ModalField label="Typebot — Slug" value={draft.slug} onChange={(event) => setDraft({ ...draft, slug: event.target.value })} placeholder="recepcao-principal" required />
+              <ModalField label="Tempo em minutos para expirar uma conversa" type="number" min={1} value={draft.expireMinutes} onChange={(event) => setDraft({ ...draft, expireMinutes: Number(event.target.value) })} />
+              <ModalField label="Intervalo (ms) entre mensagens" type="number" min={0} value={draft.messageIntervalMs} onChange={(event) => setDraft({ ...draft, messageIntervalMs: Number(event.target.value) })} />
+              <ModalField label="Palavra para finalizar o ticket" value={draft.finishWord} onChange={(event) => setDraft({ ...draft, finishWord: event.target.value })} placeholder="#sair" />
+              <ModalField label="Palavra para reiniciar o fluxo" value={draft.restartWord} onChange={(event) => setDraft({ ...draft, restartWord: event.target.value })} placeholder="#reiniciar" />
+            </div>
+            <ModalField label="Mensagem de opção inválida" value={draft.invalidOptionMessage} onChange={(event) => setDraft({ ...draft, invalidOptionMessage: event.target.value })} />
+            <ModalField label="Mensagem ao reiniciar a conversa" value={draft.restartMessage} onChange={(event) => setDraft({ ...draft, restartMessage: event.target.value })} />
+            <div className="flex justify-end gap-2 border-t border-ebot-border/[0.12] pt-4">
+              <Button type="button" variant="ghost" onClick={() => { setDraft(null); setEditing(null); }}>Cancelar</Button>
+              <Button type="submit"><Check className="size-4" />{editing ? "Salvar alterações" : "Adicionar Integração"}</Button>
+            </div>
+          </form>
+        ) : null}
       </Modal>
+
+      <Modal
+        open={Boolean(agentFor) && Boolean(agentDraft)}
+        onClose={() => { setAgentFor(null); setAgentDraft(null); }}
+        title={`Configurar agente — ${agentFor?.name ?? ""}`}
+        eyebrow="Sistema / Conectores"
+        description="Identidade, contexto e opções apresentadas pelo agente."
+        icon={Bot}
+        className="max-w-2xl"
+      >
+        {agentDraft ? (
+          <form onSubmit={(event) => { event.preventDefault(); saveAgent(); }} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ModalField label="Nome do agente" icon={Bot} value={agentDraft.agentName} onChange={(event) => setAgentDraft({ ...agentDraft, agentName: event.target.value })} placeholder="Ex.: Recepcionista virtual" required />
+              <ModalField label="Nome da Empresa" icon={Building2} value={agentDraft.companyName} onChange={(event) => setAgentDraft({ ...agentDraft, companyName: event.target.value })} placeholder="Ex.: Ê-Bot" />
+            </div>
+            <ModalTextarea label="Descrição da Empresa" value={agentDraft.companyDescription} onChange={(event) => setAgentDraft({ ...agentDraft, companyDescription: event.target.value })} placeholder="O que a empresa faz…" />
+            <ModalTextarea label="Regras do negócio" value={agentDraft.businessRules} onChange={(event) => setAgentDraft({ ...agentDraft, businessRules: event.target.value })} placeholder="Ex.: Nunca diagnosticar…" />
+            <ModalTextarea label="Contexto da empresa" value={agentDraft.companyContext} onChange={(event) => setAgentDraft({ ...agentDraft, companyContext: event.target.value })} placeholder="Horários, filiais, canais…" />
+            <ModalTextarea label="Informações extra" value={agentDraft.extraInfo} onChange={(event) => setAgentDraft({ ...agentDraft, extraInfo: event.target.value })} />
+            <ModalTextarea label="Mensagem de apresentação" value={agentDraft.welcomeMessage} onChange={(event) => setAgentDraft({ ...agentDraft, welcomeMessage: event.target.value })} placeholder="Mensagem inicial do agente…" />
+
+            <fieldset className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/25 p-3">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <legend className="px-1 text-sm font-extrabold text-ebot-dark">Opções de agente</legend>
+                <Button type="button" size="sm" variant="secondary" onClick={addAgentOption}><Plus className="size-3.5" />Adicionar opção</Button>
+              </div>
+              <ModalSelect
+                label="Integração de Fila"
+                value={agentDraft.queueIntegrationId}
+                onChange={(event) => setAgentDraft({ ...agentDraft, queueIntegrationId: event.target.value })}
+              >
+                <option value="">Selecione…</option>
+                {queues.map((queue) => <option key={queue.id} value={queue.id}>{queue.name}</option>)}
+              </ModalSelect>
+              {agentDraft.options.length === 0 ? (
+                <p className="mt-2 rounded-xl border border-dashed border-ebot-border/[0.18] p-3 text-center text-[12px] font-semibold text-ebot-muted">Nenhuma opção. Use “Adicionar opção”.</p>
+              ) : (
+                <ul className="mt-2 space-y-2">
+                  {agentDraft.options
+                    .slice()
+                    .sort((a, b) => a.order - b.order)
+                    .map((option) => (
+                      <li key={option.id} className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surface p-2.5">
+                        <div className="grid gap-2 sm:grid-cols-[64px_1fr_1fr]">
+                          <label className="block">
+                            <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Ordem</span>
+                            <input type="number" min={1} value={option.order} onChange={(event) => updateAgentOption(option.id, { order: Math.max(1, Number(event.target.value)) })} className="h-10 w-full rounded-xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-2 text-[13px] font-bold text-ebot-dark outline-none" />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Identificador</span>
+                            <input value={option.identifier} onChange={(event) => updateAgentOption(option.id, { identifier: event.target.value })} placeholder="Ex.: agendar" className="h-10 w-full rounded-xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-2 text-[13px] font-semibold text-ebot-dark outline-none" />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Chave</span>
+                            <input value={option.key} onChange={(event) => updateAgentOption(option.id, { key: event.target.value })} placeholder="Ex.: 1" className="h-10 w-full rounded-xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-2 text-[13px] font-semibold text-ebot-dark outline-none" />
+                          </label>
+                        </div>
+                        <div className="mt-2 flex items-start gap-2">
+                          <label className="block flex-1">
+                            <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Descrição</span>
+                            <input value={option.description} onChange={(event) => updateAgentOption(option.id, { description: event.target.value })} placeholder="Ex.: Agendar agendamento" className="h-10 w-full rounded-xl border border-ebot-border/[0.14] bg-ebot-surfaceMuted/45 px-2 text-[13px] font-semibold text-ebot-dark outline-none" />
+                          </label>
+                          <button type="button" onClick={() => removeAgentOption(option.id)} aria-label="Remover opção" title="Remover opção" className="mt-5 flex size-10 shrink-0 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-ebot-red/10 hover:text-ebot-red"><Trash2 className="size-4" /></button>
+                        </div>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </fieldset>
+
+            <div className="flex justify-end gap-2 border-t border-ebot-border/[0.12] pt-4">
+              <Button type="button" variant="ghost" onClick={() => { setAgentFor(null); setAgentDraft(null); }}>Cancelar</Button>
+              <Button type="submit"><Check className="size-4" />Salvar agente</Button>
+            </div>
+          </form>
+        ) : null}
+      </Modal>
+
+      <ConfirmationDialog
+        open={Boolean(deleting)}
+        onClose={() => setDeleting(null)}
+        onConfirm={remove}
+        title="Remover integração?"
+        description={`A integração "${deleting?.name ?? ""}" será removida (dados locais).`}
+        confirmLabel="Remover integração"
+      />
+
+      <p className="flex items-start gap-1.5 rounded-[20px] border border-ebot-border/[0.12] bg-ebot-surface/70 px-4 py-3 text-[11px] font-bold leading-4 text-ebot-muted">
+        <ListOrdered className="mt-0.5 size-3.5 shrink-0 text-ebot-green" />
+        Os canais de WhatsApp, Instagram e e-mail continuam sendo gerenciados na página de Canais. Aqui ficam somente os conectores Typebot com seus agentes.
+      </p>
     </div>
   );
 }

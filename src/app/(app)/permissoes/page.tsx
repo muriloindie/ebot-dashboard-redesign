@@ -1,3 +1,5 @@
-"use client";
-import { PermissoesPage } from "@/components/company/PermissoesPage";
-export default function PermissoesRoute() { return <PermissoesPage />; }
+import { redirect } from "next/navigation";
+
+export default function PermissoesRoute() {
+  redirect("/configuracoes");
+}

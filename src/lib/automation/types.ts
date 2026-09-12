@@ -88,7 +88,7 @@ export type CredentialRequirement = {
   connected: boolean;
 };
 
-export type TemplateCategory = "Agendamento" | "Exames" | "Pós-consulta" | "Triagem" | "Relacionamento";
+export type TemplateCategory = "Agendamento" | "Pedidos" | "Pós-venda" | "Triagem" | "Relacionamento";
 
 export type AutomationTemplate = {
   id: string;
@@ -106,7 +106,7 @@ export type AutomationTemplate = {
   connections: Omit<FlowConnection, "id">[];
 };
 
-export type QuickReplyScope = "pacientes" | "interno";
+export type QuickReplyScope = "clientes" | "interno";
 
 export type QuickReply = {
   id: string;
@@ -118,7 +118,7 @@ export type QuickReply = {
   updatedAt: string;
 };
 
-export type KbCategory = "Protocolos" | "Convênios" | "Exames" | "Políticas" | "Geral";
+export type KbCategory = "Protocolos" | "Parcerias" | "Pedidos" | "Políticas" | "Geral";
 
 export type KbFileKind = "pdf" | "docx" | "md" | "image" | "xlsx" | "url" | "text";
 
@@ -178,9 +178,9 @@ export type DriveFile = {
   name: string;
   kind: DriveFileKind;
   size: string;
-  scope: "patient" | "kb";
-  patientId?: string;
-  patientName?: string;
+  scope: "client" | "kb";
+  clientId?: string;
+  clientName?: string;
   kbId?: string;
   folder: string;
   sensitivity: "sensivel" | "geral";
@@ -224,4 +224,28 @@ export type AppliedTemplateOptions = {
   protocolId: string | null;
   protocolName: string | null;
   knowledgeBaseId: string | null;
+};
+
+export type PromptVoiceMode = "texto" | "voz";
+
+export const OPENAI_VOICES = ["alloy", "ash", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer"] as const;
+
+export type OpenAIVoice = (typeof OPENAI_VOICES)[number];
+
+export type Prompt = {
+  id: string;
+  name: string;
+  apiKey: string;
+  prompt: string;
+  queueId: string;
+  queueName: string;
+  voiceMode: PromptVoiceMode;
+  voice?: OpenAIVoice;
+  voiceApiKey?: string;
+  voiceRegion?: string;
+  temperature: number;
+  maxTokens: number;
+  maxHistoryMessages: number;
+  active: boolean;
+  updatedAt: string;
 };

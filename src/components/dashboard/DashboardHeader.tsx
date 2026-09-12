@@ -21,11 +21,11 @@ export function DashboardHeader() {
   return (
     <div ref={ref} className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
       <div className="max-w-3xl">
-        <h2 data-header-reveal className="text-[32px] font-extrabold tracking-[-0.04em] text-clinical-dark sm:text-4xl lg:text-[40px]">
+        <h2 data-header-reveal className="text-[32px] font-extrabold tracking-[-0.04em] text-ebot-dark sm:text-4xl lg:text-[40px]">
           Bom dia, {profile.name}
         </h2>
-        <p data-header-reveal className="mt-3 max-w-2xl text-base leading-7 text-clinical-muted">
-          Veja como está a operação da clínica hoje: atendimentos, agenda, IA e recepção.
+        <p data-header-reveal className="mt-3 max-w-2xl text-base leading-7 text-ebot-muted">
+          Veja como está a operação da empresa hoje: atendimentos, agenda, IA e atendimento.
         </p>
       </div>
 

@@ -145,14 +145,14 @@ export function FlowsPage() {
       <PageHeader
         eyebrow="Automação / Jornadas"
         title="Fluxos de automação"
-        description="Ative, pause, edite e acompanhe as jornadas automatizadas da clínica. Os fluxos rodam sobre o motor n8n da Ê-Bot e podem nascer de um template da loja."
+        description="Ative, pause, edite e acompanhe as jornadas automatizadas da empresa. Os fluxos rodam sobre o motor n8n da Ê-Bot e podem nascer de um template da loja."
         aside={<Button variant="secondary" onClick={() => router.push("/templates")}><Store className="size-4" />Loja de templates</Button>}
         action={<Button onClick={createBlank}><Plus className="size-4" />Novo fluxo</Button>}
       />
 
       <StatStrip items={stats} />
 
-      <div className="flex flex-col gap-2 rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/70 p-2.5">
+      <div className="flex flex-col gap-2 rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/70 p-2.5">
         <SearchField value={query} onChange={setQuery} placeholder="Buscar fluxo por nome, descrição ou tag" />
         <SegmentedTabs
           tabs={[ALL, "Ativo", "Pausado", "Rascunho"].map((item) => ({
@@ -181,50 +181,50 @@ export function FlowsPage() {
               <article
                 key={workflow.id}
                 className={cn(
-                  "relative flex flex-col rounded-[24px] border bg-clinical-surface/80 p-5 shadow-[0_8px_24px_rgba(38,53,50,0.04)] transition hover:shadow-clinical",
-                  highlighted ? "border-clinical-blue/50 ring-2 ring-clinical-blue/20" : "border-clinical-border/[0.14] hover:border-clinical-blue/25"
+                  "relative flex flex-col rounded-[24px] border bg-ebot-surface/80 p-5 shadow-[0_8px_24px_rgba(4,27,21,0.04)] transition hover:shadow-ebot",
+                  highlighted ? "border-ebot-primary/50 ring-2 ring-ebot-primary/20" : "border-ebot-border/[0.14] hover:border-ebot-primary/25"
                 )}
               >
-                {highlighted ? <span className="absolute -top-3 left-5 rounded-full bg-clinical-blue px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-clinical-charcoal">Aplicado agora</span> : null}
+                {highlighted ? <span className="absolute -top-3 left-5 rounded-full bg-ebot-primary px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-ebot-charcoal">Aplicado agora</span> : null}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl", workflow.status === "active" ? "bg-clinical-green/[0.12] text-clinical-green" : workflow.status === "paused" ? "bg-clinical-orange/[0.12] text-clinical-orange" : "bg-clinical-blue/[0.10] text-clinical-blue")}>
+                    <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl", workflow.status === "active" ? "bg-ebot-green/[0.12] text-ebot-green" : workflow.status === "paused" ? "bg-ebot-orange/[0.12] text-ebot-orange" : "bg-ebot-primary/[0.10] text-ebot-primary")}>
                       <WorkflowIcon className="size-5" />
                     </span>
                     <div className="min-w-0">
-                      <h2 className="truncate text-base font-extrabold tracking-tight text-clinical-dark">{workflow.name}</h2>
+                      <h2 className="truncate text-base font-extrabold tracking-tight text-ebot-dark">{workflow.name}</h2>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <StatusBadge label={meta.label} tone={meta.tone} />
-                        <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2 py-1 text-[11px] font-extrabold text-clinical-slate"><RadioTower className="size-3" />{workflow.channel}</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-ebot-surfaceMuted px-2 py-1 text-[11px] font-extrabold text-ebot-slate"><RadioTower className="size-3" />{workflow.channel}</span>
                       </div>
                     </div>
                   </div>
                   <div className="relative shrink-0">
-                    <button type="button" onClick={() => setMenuFor(menuFor === workflow.id ? null : workflow.id)} aria-label={`Ações do fluxo ${workflow.name}`} aria-expanded={menuFor === workflow.id} className="flex size-9 items-center justify-center rounded-xl border border-clinical-border/[0.12] text-clinical-muted transition hover:border-clinical-blue/25 hover:text-clinical-blue">
+                    <button type="button" onClick={() => setMenuFor(menuFor === workflow.id ? null : workflow.id)} aria-label={`Ações do fluxo ${workflow.name}`} aria-expanded={menuFor === workflow.id} className="flex size-9 items-center justify-center rounded-xl border border-ebot-border/[0.12] text-ebot-muted transition hover:border-ebot-primary/25 hover:text-ebot-primary">
                       <MoreHorizontal className="size-4" />
                     </button>
                     {menuFor === workflow.id ? (
-                      <div role="menu" className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface p-2 shadow-clinical">
-                        <button type="button" role="menuitem" onClick={() => { setMenuFor(null); setLogsFor(workflow); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-slate transition hover:bg-clinical-blue/[0.08] hover:text-clinical-blue"><ScrollText className="size-4" />Ver logs de execução</button>
-                        <button type="button" role="menuitem" onClick={() => { setMenuFor(null); duplicate(workflow); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-slate transition hover:bg-clinical-blue/[0.08] hover:text-clinical-blue"><Copy className="size-4" />Duplicar fluxo</button>
-                        <button type="button" role="menuitem" onClick={() => { setMenuFor(null); setDeleting(workflow); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-clinical-red transition hover:bg-clinical-red/[0.08]"><Trash2 className="size-4" />Excluir fluxo</button>
+                      <div role="menu" className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-ebot-border/[0.14] bg-ebot-surface p-2 shadow-ebot">
+                        <button type="button" role="menuitem" onClick={() => { setMenuFor(null); setLogsFor(workflow); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-ebot-slate transition hover:bg-ebot-primary/[0.08] hover:text-ebot-primary"><ScrollText className="size-4" />Ver logs de execução</button>
+                        <button type="button" role="menuitem" onClick={() => { setMenuFor(null); duplicate(workflow); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-ebot-slate transition hover:bg-ebot-primary/[0.08] hover:text-ebot-primary"><Copy className="size-4" />Duplicar fluxo</button>
+                        <button type="button" role="menuitem" onClick={() => { setMenuFor(null); setDeleting(workflow); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-ebot-red transition hover:bg-ebot-red/[0.08]"><Trash2 className="size-4" />Excluir fluxo</button>
                       </div>
                     ) : null}
                   </div>
                 </div>
 
-                <p className="mt-3 line-clamp-2 min-h-10 text-[13px] leading-5 text-clinical-muted">{workflow.description}</p>
+                <p className="mt-3 line-clamp-2 min-h-10 text-[13px] leading-5 text-ebot-muted">{workflow.description}</p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                  {workflow.protocolName ? <span className="inline-flex items-center gap-1 rounded-full bg-clinical-blue/[0.08] px-2.5 py-1 text-[11px] font-extrabold text-clinical-blueText"><ClipboardList className="size-3" />{workflow.protocolName}</span> : null}
-                  {workflow.knowledgeBaseId ? <span className="inline-flex items-center gap-1 rounded-full bg-clinical-teal/[0.10] px-2.5 py-1 text-[11px] font-extrabold text-clinical-teal"><BookOpen className="size-3" />Base de conhecimento</span> : null}
-                  {workflow.tags.map((tag) => <span key={tag} className="rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-muted">#{tag}</span>)}
+                  {workflow.protocolName ? <span className="inline-flex items-center gap-1 rounded-full bg-ebot-primary/[0.08] px-2.5 py-1 text-[11px] font-extrabold text-ebot-primaryText"><ClipboardList className="size-3" />{workflow.protocolName}</span> : null}
+                  {workflow.knowledgeBaseId ? <span className="inline-flex items-center gap-1 rounded-full bg-ebot-teal/[0.10] px-2.5 py-1 text-[11px] font-extrabold text-ebot-teal"><BookOpen className="size-3" />Base de conhecimento</span> : null}
+                  {workflow.tags.map((tag) => <span key={tag} className="rounded-full bg-ebot-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-ebot-muted">#{tag}</span>)}
                 </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-clinical-border/[0.10] pt-3 text-center">
-                  <div><p className="text-base font-extrabold tabular-nums text-clinical-dark">{workflow.executions7d}</p><p className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Execuções 7d</p></div>
-                  <div><p className="text-base font-extrabold tabular-nums text-clinical-dark">{workflow.successRate}%</p><p className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Sucesso</p></div>
-                  <div><p className="truncate text-base font-extrabold text-clinical-dark">{workflow.lastRun}</p><p className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Última</p></div>
+                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-ebot-border/[0.10] pt-3 text-center">
+                  <div><p className="text-base font-extrabold tabular-nums text-ebot-dark">{workflow.executions7d}</p><p className="text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Execuções 7d</p></div>
+                  <div><p className="text-base font-extrabold tabular-nums text-ebot-dark">{workflow.successRate}%</p><p className="text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Sucesso</p></div>
+                  <div><p className="truncate text-base font-extrabold text-ebot-dark">{workflow.lastRun}</p><p className="text-[10px] font-extrabold uppercase tracking-wider text-ebot-muted">Última</p></div>
                 </div>
 
                 <div className="mt-4 flex flex-col gap-2">
@@ -279,41 +279,41 @@ export function ExecutionLogs({ workflow }: { workflow: Workflow }) {
             onClick={() => setSelected(execution)}
             className={cn(
               "w-full rounded-2xl border p-3.5 text-left transition",
-              selected?.id === execution.id ? "border-clinical-blue/40 bg-clinical-blue/[0.07]" : "border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 hover:border-clinical-blue/25"
+              selected?.id === execution.id ? "border-ebot-primary/40 bg-ebot-primary/[0.07]" : "border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 hover:border-ebot-primary/25"
             )}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2 text-sm font-extrabold text-clinical-dark">
+              <span className="flex items-center gap-2 text-sm font-extrabold text-ebot-dark">
                 <StatusBadge label={execution.status === "success" ? "Sucesso" : execution.status === "error" ? "Erro" : execution.status === "running" ? "Rodando" : "Aguardando"} tone={executionTone(execution.status)} />
                 {execution.startedAt}
               </span>
-              <span className="text-[11px] font-bold text-clinical-muted">{(execution.durationMs / 1000).toFixed(1)}s</span>
+              <span className="text-[11px] font-bold text-ebot-muted">{(execution.durationMs / 1000).toFixed(1)}s</span>
             </div>
-            <p className="mt-1.5 text-xs font-semibold text-clinical-muted">{execution.trigger}</p>
+            <p className="mt-1.5 text-xs font-semibold text-ebot-muted">{execution.trigger}</p>
           </button>
         ))}
       </div>
 
       {selected ? (
-        <section className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-4">
-          <h3 className="text-sm font-extrabold text-clinical-dark">Detalhe por nó</h3>
-          <p className="mt-0.5 text-xs font-semibold text-clinical-muted">Execução {selected.id} · {(selected.durationMs / 1000).toFixed(1)}s no total</p>
+        <section className="rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/35 p-4">
+          <h3 className="text-sm font-extrabold text-ebot-dark">Detalhe por nó</h3>
+          <p className="mt-0.5 text-xs font-semibold text-ebot-muted">Execução {selected.id} · {(selected.durationMs / 1000).toFixed(1)}s no total</p>
           <div className="mt-3 space-y-2">
             {workflow.nodes.map((node) => {
               const result = selected.nodeResults[node.id];
               const visual = getNodeVisual(node.type);
               const Icon = visual.icon;
               return (
-                <div key={node.id} className="flex items-start gap-3 rounded-xl border border-clinical-border/[0.10] bg-clinical-surface px-3 py-2.5">
-                  <span className={cn("mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg", result?.status === "error" ? "bg-clinical-red/[0.12] text-clinical-red" : result?.status === "success" ? "bg-clinical-green/[0.12] text-clinical-green" : "bg-clinical-surfaceMuted text-clinical-muted")}>
+                <div key={node.id} className="flex items-start gap-3 rounded-xl border border-ebot-border/[0.10] bg-ebot-surface px-3 py-2.5">
+                  <span className={cn("mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg", result?.status === "error" ? "bg-ebot-red/[0.12] text-ebot-red" : result?.status === "success" ? "bg-ebot-green/[0.12] text-ebot-green" : "bg-ebot-surfaceMuted text-ebot-muted")}>
                     <Icon className="size-3.5" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[13px] font-extrabold text-clinical-dark">{node.name}</span>
-                      {result ? <span className="shrink-0 text-[10px] font-bold tabular-nums text-clinical-muted">{result.durationMs}ms</span> : null}
+                      <span className="truncate text-[13px] font-extrabold text-ebot-dark">{node.name}</span>
+                      {result ? <span className="shrink-0 text-[10px] font-bold tabular-nums text-ebot-muted">{result.durationMs}ms</span> : null}
                     </span>
-                    <span className={cn("mt-0.5 block text-xs leading-4", result?.status === "error" ? "font-bold text-clinical-red" : "font-semibold text-clinical-muted")}>
+                    <span className={cn("mt-0.5 block text-xs leading-4", result?.status === "error" ? "font-bold text-ebot-red" : "font-semibold text-ebot-muted")}>
                       {result?.status === "skipped" ? "Não executado (caminho alternativo)." : result?.error ?? result?.output ?? "Sem dados."}
                     </span>
                   </span>
@@ -321,7 +321,7 @@ export function ExecutionLogs({ workflow }: { workflow: Workflow }) {
               );
             })}
           </div>
-          <p className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-clinical-muted"><Zap className="size-3.5 text-clinical-blue" />No editor, selecione esta execução para visualizar o status direto no canvas.</p>
+          <p className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-ebot-muted"><Zap className="size-3.5 text-ebot-primary" />No editor, selecione esta execução para visualizar o status direto no canvas.</p>
         </section>
       ) : null}
     </div>

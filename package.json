@@ -1,5 +1,5 @@
 {
-  "name": "ebot-clinical-dashboard-prototype",
+  "name": "ebot-dashboard-prototype",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -21,6 +21,7 @@
     "lucide-react": "^0.468.0",
     "next": "^15.3.5",
     "react": "^19.0.0",
+    "react-colorful": "^5.8.1",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.3",
     "tailwind-merge": "^2.5.4"

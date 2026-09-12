@@ -69,13 +69,13 @@ export function Drawer({ open, onClose, title, description, children, width = "m
 
   if (!rendered || typeof document === "undefined") return null;
   return createPortal(
-    <div ref={backdropRef} className="fixed inset-0 z-[90] flex justify-end bg-clinical-charcoal/30 backdrop-blur-[3px] opacity-0" role="presentation" onMouseDown={onClose}>
-      <aside ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined} className={cn("flex h-full w-full flex-col border-l border-clinical-border/[0.14] bg-clinical-surface shadow-2xl", width)} onMouseDown={(event) => event.stopPropagation()}>
-        <div className="flex items-start justify-between gap-4 border-b border-clinical-border/[0.12] px-5 py-5 sm:px-6">
-          <div><h2 id={titleId} className="text-lg font-extrabold tracking-tight text-clinical-dark">{title}</h2>{description ? <p id={descriptionId} className="mt-1 text-sm leading-5 text-clinical-muted">{description}</p> : null}</div>
-          <button type="button" onClick={onClose} aria-label="Fechar painel" className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-clinical-border/[0.12] text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue focus:outline-none focus:ring-2 focus:ring-clinical-blue/25"><X className="size-4" /></button>
+    <div ref={backdropRef} className="fixed inset-0 z-[90] flex justify-end bg-ebot-charcoal/30 backdrop-blur-[3px] opacity-0" role="presentation" onMouseDown={onClose}>
+      <aside ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined} className={cn("flex h-full w-full flex-col border-l border-ebot-border/[0.14] bg-ebot-surface shadow-2xl", width)} onMouseDown={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 border-b border-ebot-border/[0.12] px-5 py-5 sm:px-6">
+          <div><h2 id={titleId} className="text-lg font-extrabold tracking-tight text-ebot-dark">{title}</h2>{description ? <p id={descriptionId} className="mt-1 text-sm leading-5 text-ebot-muted">{description}</p> : null}</div>
+          <button type="button" onClick={onClose} aria-label="Fechar painel" className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-ebot-border/[0.12] text-ebot-muted transition hover:bg-ebot-primary/10 hover:text-ebot-primary focus:outline-none focus:ring-2 focus:ring-ebot-primary/25"><X className="size-4" /></button>
         </div>
-        <div className="clinical-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
+        <div className="ebot-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
       </aside>
     </div>,
     document.body

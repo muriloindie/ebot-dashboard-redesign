@@ -6,13 +6,16 @@ import {
   seedCampaigns,
   seedCampaignSettings,
   seedConfig,
+  seedContactEntries,
   seedContactLists,
   seedHelpTopics,
+  seedHelpVideos,
   seedInvoices,
   seedIntegrations,
   seedPermissionMatrix,
   seedQueues,
   seedSectors,
+  seedTypebotIntegrations,
   seedUsers
 } from "@/data/companyMock";
 import type {
@@ -20,28 +23,34 @@ import type {
   AppConfigSection,
   Campaign,
   CampaignSettings,
+  ContactEntry,
   ContactList,
   HelpTopic,
+  HelpVideo,
   Integration,
   Invoice,
   PermissionMatrix,
   Queue,
   Sector,
-  StaffUser
+  StaffUser,
+  TypebotIntegration
 } from "./types";
 
 const KEYS = {
   campaigns: "ebot-com-campaigns",
   contactLists: "ebot-com-contact-lists",
+  contactEntries: "ebot-com-contact-entries",
   campaignSettings: "ebot-com-campaign-settings",
   sectors: "ebot-com-sectors",
   queues: "ebot-com-queues",
   users: "ebot-com-users",
   permissions: "ebot-com-permissions",
   integrations: "ebot-com-integrations",
+  typebot: "ebot-com-typebot",
   endpoints: "ebot-com-endpoints",
   invoices: "ebot-com-invoices",
   help: "ebot-com-help",
+  helpVideos: "ebot-com-help-videos",
   config: "ebot-com-config"
 };
 
@@ -84,6 +93,22 @@ export function saveContactList(list: ContactList) {
 
 export function deleteContactList(id: string) {
   writeLocalCache(KEYS.contactLists, listContactLists().filter((list) => list.id !== id));
+}
+
+export function listContactEntries(listId?: string): ContactEntry[] {
+  const all = readLocalCache<ContactEntry[]>(KEYS.contactEntries, seedContactEntries);
+  return listId ? all.filter((entry) => entry.listId === listId) : all;
+}
+
+export function saveContactEntry(entry: ContactEntry) {
+  const all = readLocalCache<ContactEntry[]>(KEYS.contactEntries, seedContactEntries);
+  const exists = all.some((item) => item.id === entry.id);
+  writeLocalCache(KEYS.contactEntries, exists ? all.map((item) => (item.id === entry.id ? entry : item)) : [entry, ...all]);
+}
+
+export function deleteContactEntry(id: string) {
+  const all = readLocalCache<ContactEntry[]>(KEYS.contactEntries, seedContactEntries);
+  writeLocalCache(KEYS.contactEntries, all.filter((entry) => entry.id !== id));
 }
 
 export function getCampaignSettings(): CampaignSettings {
@@ -198,6 +223,46 @@ export function saveInvoice(invoice: Invoice) {
 
 export function listHelpTopics(): HelpTopic[] {
   return readLocalCache<HelpTopic[]>(KEYS.help, seedHelpTopics);
+}
+
+export function saveHelpTopic(topic: HelpTopic) {
+  const rows = listHelpTopics();
+  const exists = rows.some((row) => row.id === topic.id);
+  writeLocalCache(KEYS.help, exists ? rows.map((row) => (row.id === topic.id ? topic : row)) : [topic, ...rows]);
+}
+
+export function deleteHelpTopic(id: string) {
+  writeLocalCache(KEYS.help, listHelpTopics().filter((row) => row.id !== id));
+}
+
+export function listHelpVideos(): HelpVideo[] {
+  return readLocalCache<HelpVideo[]>(KEYS.helpVideos, seedHelpVideos);
+}
+
+export function saveHelpVideo(video: HelpVideo) {
+  const rows = listHelpVideos();
+  const exists = rows.some((row) => row.id === video.id);
+  writeLocalCache(KEYS.helpVideos, exists ? rows.map((row) => (row.id === video.id ? video : row)) : [video, ...rows]);
+}
+
+export function deleteHelpVideo(id: string) {
+  writeLocalCache(KEYS.helpVideos, listHelpVideos().filter((row) => row.id !== id));
+}
+
+// ---- Typebot integrations ----
+
+export function listTypebotIntegrations(): TypebotIntegration[] {
+  return readLocalCache<TypebotIntegration[]>(KEYS.typebot, seedTypebotIntegrations);
+}
+
+export function saveTypebotIntegration(integration: TypebotIntegration) {
+  const rows = listTypebotIntegrations();
+  const exists = rows.some((row) => row.id === integration.id);
+  writeLocalCache(KEYS.typebot, exists ? rows.map((row) => (row.id === integration.id ? integration : row)) : [integration, ...rows]);
+}
+
+export function deleteTypebotIntegration(id: string) {
+  writeLocalCache(KEYS.typebot, listTypebotIntegrations().filter((row) => row.id !== id));
 }
 
 // ---- Config ----

@@ -36,16 +36,16 @@ const MESSAGES_CACHE_KEY = "ebot-week1-chat-messages";
 const threadSeed: ChatThread[] = [
   {
     id: "CH-20",
-    name: "Plantão da recepção",
+    name: "Plantão do atendimento",
     initials: "PR",
     team: "Canal interno",
     status: "online",
-    preview: "Dra. Mariana: confirmo o horário das 14h.",
+    preview: "Mariana: confirmo o horário das 14h.",
     time: "09:12",
     unread: 3,
     kind: "group",
     pinned: true,
-    color: "#3A9DCA",
+    color: "#6B942E",
     members: ["Mariana Duarte", "Rafael Lima", "Camila Rodrigues", "Lucas Ferreira"]
   },
   ...chatThreads.map((chat) => ({
@@ -224,14 +224,14 @@ export function ChatsPage() {
       id,
       name,
       initials: initialsFromName(name),
-      team: newChatType === "team" ? "Canal interno" : "Equipe clínica",
+      team: newChatType === "team" ? "Canal interno" : "Equipe empresa",
       status: "online",
       preview: newChatType === "team" ? `Canal com ${memberNames.length} membro${memberNames.length === 1 ? "" : "s"}.` : "Novo chat criado localmente.",
       time: "agora",
       unread: 0,
       kind: newChatType === "team" ? "group" : "dm",
       pinned: false,
-      color: newChatType === "team" ? "#3A9DCA" : undefined,
+      color: newChatType === "team" ? "#6B942E" : undefined,
       members: newChatType === "team" ? memberNames : [name]
     };
     const nextThreads = [newThread, ...threads];
@@ -292,80 +292,80 @@ export function ChatsPage() {
       />
 
       <div className="grid min-h-[620px] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <section className={cn("min-w-0 flex-col overflow-hidden rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/75", mobileView === "list" ? "flex" : "hidden", "lg:flex")} aria-label="Lista de conversas">
-          <div className="border-b border-clinical-border/[0.12] p-3">
+        <section className={cn("min-w-0 flex-col overflow-hidden rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/75", mobileView === "list" ? "flex" : "hidden", "lg:flex")} aria-label="Lista de conversas">
+          <div className="border-b border-ebot-border/[0.12] p-3">
             <SegmentedTabs tabs={[{ id: "Todas", label: "Todas", count: threads.length }, { id: "Não lidas", label: "Não lidas", count: unreadTotal }]} value={tab} onChange={setTab} />
-            <label className="mt-3 flex h-10 items-center gap-2 rounded-xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/45 px-3"><Search className="size-4 text-clinical-muted" /><span className="sr-only">Buscar chats</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar conversa" className="min-w-0 flex-1 bg-transparent text-sm outline-none" /></label>
+            <label className="mt-3 flex h-10 items-center gap-2 rounded-xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/45 px-3"><Search className="size-4 text-ebot-muted" /><span className="sr-only">Buscar chats</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar conversa" className="min-w-0 flex-1 bg-transparent text-sm outline-none" /></label>
           </div>
-          <div className="clinical-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
+          <div className="ebot-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
             {visible.length ? visible.map((thread) => (
-              <button type="button" key={thread.id} onClick={() => selectThread(thread.id)} aria-current={thread.id === selected?.id ? "page" : undefined} className={cn("animate-list-in mb-1 w-full rounded-2xl p-3 text-left transition", thread.id === selected?.id ? "bg-clinical-blue/[0.10]" : "hover:bg-clinical-surfaceMuted/70")}>
+              <button type="button" key={thread.id} onClick={() => selectThread(thread.id)} aria-current={thread.id === selected?.id ? "page" : undefined} className={cn("animate-list-in mb-1 w-full rounded-2xl p-3 text-left transition", thread.id === selected?.id ? "bg-ebot-primary/[0.10]" : "hover:bg-ebot-surfaceMuted/70")}>
                 <span className="flex gap-3">
-                  <span className={cn("relative flex size-10 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold", thread.color ? "text-white" : "bg-clinical-charcoal text-white")} style={thread.color ? { backgroundColor: thread.color } : undefined}>
+                  <span className={cn("relative flex size-10 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold", thread.color ? "text-white" : "bg-ebot-charcoal text-white")} style={thread.color ? { backgroundColor: thread.color } : undefined}>
                     {thread.initials}
-                    {thread.kind === "group" ? <span className="absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-clinical-surface text-clinical-slate"><UsersRound className="size-2.5" /></span> : <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-clinical-surface", thread.status === "online" ? "bg-clinical-green" : thread.status === "busy" ? "bg-clinical-orange" : "bg-clinical-muted")} />}
+                    {thread.kind === "group" ? <span className="absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-ebot-surface text-ebot-slate"><UsersRound className="size-2.5" /></span> : <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-ebot-surface", thread.status === "online" ? "bg-ebot-green" : thread.status === "busy" ? "bg-ebot-orange" : "bg-ebot-muted")} />}
                   </span>
-                  <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><span className="flex min-w-0 items-center gap-1.5"><span className="truncate text-sm font-extrabold text-clinical-dark">{thread.name}</span>{thread.pinned ? <Pin className="size-3 shrink-0 text-clinical-blue" /> : null}</span><span className="shrink-0 text-[11px] text-clinical-muted">{thread.time}</span></span><span className="mt-0.5 block truncate text-[11px] font-semibold text-clinical-muted">{thread.kind === "group" ? `Canal · ${(thread.members ?? []).length} membros` : thread.team}</span><span className="mt-1 flex items-center justify-between gap-2"><span className="truncate text-xs text-clinical-slate">{thread.preview}</span>{thread.unread > 0 ? <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-clinical-blue text-[10px] font-black text-clinical-charcoal">{thread.unread}</span> : null}</span></span>
+                  <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><span className="flex min-w-0 items-center gap-1.5"><span className="truncate text-sm font-extrabold text-ebot-dark">{thread.name}</span>{thread.pinned ? <Pin className="size-3 shrink-0 text-ebot-primary" /> : null}</span><span className="shrink-0 text-[11px] text-ebot-muted">{thread.time}</span></span><span className="mt-0.5 block truncate text-[11px] font-semibold text-ebot-muted">{thread.kind === "group" ? `Canal · ${(thread.members ?? []).length} membros` : thread.team}</span><span className="mt-1 flex items-center justify-between gap-2"><span className="truncate text-xs text-ebot-slate">{thread.preview}</span>{thread.unread > 0 ? <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-ebot-primary text-[10px] font-black text-ebot-charcoal">{thread.unread}</span> : null}</span></span>
                 </span>
               </button>
             )) : (
-              <div className="flex min-h-52 flex-col items-center justify-center p-6 text-center"><span className="flex size-11 items-center justify-center rounded-2xl bg-clinical-surfaceMuted text-clinical-muted"><SearchX className="size-5" /></span><p className="mt-3 text-sm font-extrabold text-clinical-dark">Nenhuma conversa encontrada</p><p className="mt-1 text-xs leading-5 text-clinical-muted">Tente outro nome, equipe ou termo de busca.</p><Button size="sm" variant="secondary" className="mt-4" onClick={clearSearch}>Limpar busca</Button></div>
+              <div className="flex min-h-52 flex-col items-center justify-center p-6 text-center"><span className="flex size-11 items-center justify-center rounded-2xl bg-ebot-surfaceMuted text-ebot-muted"><SearchX className="size-5" /></span><p className="mt-3 text-sm font-extrabold text-ebot-dark">Nenhuma conversa encontrada</p><p className="mt-1 text-xs leading-5 text-ebot-muted">Tente outro nome, equipe ou termo de busca.</p><Button size="sm" variant="secondary" className="mt-4" onClick={clearSearch}>Limpar busca</Button></div>
             )}
           </div>
         </section>
 
-        <section className={cn("min-w-0 flex-col overflow-hidden rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/75", mobileView === "chat" ? "flex" : "hidden", "lg:flex")} aria-label="Conversa selecionada">
+        <section className={cn("min-w-0 flex-col overflow-hidden rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/75", mobileView === "chat" ? "flex" : "hidden", "lg:flex")} aria-label="Conversa selecionada">
           {selected ? (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex items-center gap-3 border-b border-clinical-border/[0.12] px-3 py-3 sm:px-4">
-                <button type="button" onClick={() => setMobileView("list")} className="flex size-9 items-center justify-center rounded-xl text-clinical-blue transition hover:bg-clinical-blue/10 lg:hidden" aria-label="Voltar para a lista de conversas"><ArrowLeft className="size-4" /></button>
-                <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold text-white", !selected.color && "bg-clinical-charcoal")} style={selected.color ? { backgroundColor: selected.color } : undefined}>{selected.initials}</span>
-                <div className="min-w-0 flex-1"><h2 className="truncate text-sm font-extrabold text-clinical-dark">{selected.name}</h2><p className="truncate text-xs font-semibold text-clinical-muted">{selected.kind === "group" ? `Canal interno · ${(selected.members ?? []).length} membros` : `${selected.team} · ${selected.status === "online" ? "online" : selected.status === "busy" ? "ocupado" : "offline"}`}</p></div>
-                {selected.kind === "group" ? <button type="button" onClick={() => setMembersOpen((open) => !open)} className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-extrabold text-clinical-blue transition hover:bg-clinical-blue/10" aria-expanded={membersOpen}><Users className="size-4" />Membros</button> : null}
-                <button type="button" onClick={togglePin} className="rounded-xl p-2 text-clinical-muted transition hover:bg-clinical-surfaceMuted" aria-label={selected.pinned ? "Desafixar conversa" : "Fixar conversa"} title={selected.pinned ? "Desafixar" : "Fixar"}>{selected.pinned ? <PinOff className="size-4 text-clinical-blue" /> : <Pin className="size-4" />}</button>
-                <button type="button" onClick={toggleSelectedRead} className="rounded-xl px-2.5 py-2 text-[11px] font-extrabold text-clinical-blue transition hover:bg-clinical-blue/10" aria-label={selected.unread > 0 ? "Marcar conversa como lida" : "Marcar conversa como não lida"}>{selected.unread > 0 ? "Marcar lida" : "Não lida"}</button>
+              <div className="flex items-center gap-3 border-b border-ebot-border/[0.12] px-3 py-3 sm:px-4">
+                <button type="button" onClick={() => setMobileView("list")} className="flex size-9 items-center justify-center rounded-xl text-ebot-primary transition hover:bg-ebot-primary/10 lg:hidden" aria-label="Voltar para a lista de conversas"><ArrowLeft className="size-4" /></button>
+                <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold text-white", !selected.color && "bg-ebot-charcoal")} style={selected.color ? { backgroundColor: selected.color } : undefined}>{selected.initials}</span>
+                <div className="min-w-0 flex-1"><h2 className="truncate text-sm font-extrabold text-ebot-dark">{selected.name}</h2><p className="truncate text-xs font-semibold text-ebot-muted">{selected.kind === "group" ? `Canal interno · ${(selected.members ?? []).length} membros` : `${selected.team} · ${selected.status === "online" ? "online" : selected.status === "busy" ? "ocupado" : "offline"}`}</p></div>
+                {selected.kind === "group" ? <button type="button" onClick={() => setMembersOpen((open) => !open)} className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-extrabold text-ebot-primary transition hover:bg-ebot-primary/10" aria-expanded={membersOpen}><Users className="size-4" />Membros</button> : null}
+                <button type="button" onClick={togglePin} className="rounded-xl p-2 text-ebot-muted transition hover:bg-ebot-surfaceMuted" aria-label={selected.pinned ? "Desafixar conversa" : "Fixar conversa"} title={selected.pinned ? "Desafixar" : "Fixar"}>{selected.pinned ? <PinOff className="size-4 text-ebot-primary" /> : <Pin className="size-4" />}</button>
+                <button type="button" onClick={toggleSelectedRead} className="rounded-xl px-2.5 py-2 text-[11px] font-extrabold text-ebot-primary transition hover:bg-ebot-primary/10" aria-label={selected.unread > 0 ? "Marcar conversa como lida" : "Marcar conversa como não lida"}>{selected.unread > 0 ? "Marcar lida" : "Não lida"}</button>
               </div>
 
               {membersOpen && selected.kind === "group" ? (
-                <aside className="border-b border-clinical-border/[0.12] bg-clinical-surfaceMuted/25 p-4" aria-label={`Membros de ${selected.name}`}>
+                <aside className="border-b border-ebot-border/[0.12] bg-ebot-surfaceMuted/25 p-4" aria-label={`Membros de ${selected.name}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[12px] font-extrabold text-clinical-dark"><Users className="mr-1.5 inline size-4 text-clinical-blue" />Membros · {(selected.members ?? []).length}</p>
-                    <button type="button" onClick={() => setMembersOpen(false)} className="rounded-lg px-2 py-1 text-[11px] font-extrabold text-clinical-muted transition hover:text-clinical-dark">Fechar</button>
+                    <p className="text-[12px] font-extrabold text-ebot-dark"><Users className="mr-1.5 inline size-4 text-ebot-primary" />Membros · {(selected.members ?? []).length}</p>
+                    <button type="button" onClick={() => setMembersOpen(false)} className="rounded-lg px-2 py-1 text-[11px] font-extrabold text-ebot-muted transition hover:text-ebot-dark">Fechar</button>
                   </div>
                   <div className="mt-3 space-y-1.5">
                     {(selected.members ?? []).map((member) => {
                       const user = candidates.find((candidate) => candidate.name === member);
                       return (
-                        <div key={member} className="flex items-center gap-2.5 rounded-xl bg-clinical-surface/80 px-3 py-2">
-                          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[10px] font-extrabold text-white" style={{ backgroundColor: user?.avatarColor ?? "#3A9DCA" }}>{initialsFromName(member)}</span>
+                        <div key={member} className="flex items-center gap-2.5 rounded-xl bg-ebot-surface/80 px-3 py-2">
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[10px] font-extrabold text-white" style={{ backgroundColor: user?.avatarColor ?? "#6B942E" }}>{initialsFromName(member)}</span>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-[12px] font-extrabold text-clinical-dark">{member}</p>
-                            <p className="truncate text-[10px] font-bold text-clinical-muted">{user?.role ?? "Membro do time"}</p>
+                            <p className="truncate text-[12px] font-extrabold text-ebot-dark">{member}</p>
+                            <p className="truncate text-[10px] font-bold text-ebot-muted">{user?.role ?? "Membro do time"}</p>
                           </div>
-                          <span className={cn("size-2 rounded-full", user?.status === "online" ? "bg-clinical-green" : user?.status === "ausente" ? "bg-clinical-orange" : "bg-clinical-muted")} title={user?.status ?? "offline"} />
+                          <span className={cn("size-2 rounded-full", user?.status === "online" ? "bg-ebot-green" : user?.status === "ausente" ? "bg-ebot-orange" : "bg-ebot-muted")} title={user?.status ?? "offline"} />
                         </div>
                       );
                     })}
                   </div>
                   <div className="mt-3 flex items-center gap-2">
-                    <select value={inviteDraft} onChange={(event) => setInviteDraft(event.target.value)} aria-label="Adicionar membro ao grupo" className="h-9 min-w-0 flex-1 rounded-xl border border-clinical-border/[0.14] bg-clinical-surface/80 px-2.5 text-[12px] font-bold text-clinical-dark outline-none focus:border-clinical-blue/45">
+                    <select value={inviteDraft} onChange={(event) => setInviteDraft(event.target.value)} aria-label="Adicionar membro ao grupo" className="h-9 min-w-0 flex-1 rounded-xl border border-ebot-border/[0.14] bg-ebot-surface/80 px-2.5 text-[12px] font-bold text-ebot-dark outline-none focus:border-ebot-primary/45">
                       <option value="">Convidar membro…</option>
                       {candidates.filter((candidate) => !(selected.members ?? []).includes(candidate.name)).map((candidate) => <option key={candidate.id} value={candidate.name}>{candidate.name} · {candidate.role}</option>)}
                     </select>
                     <Button size="sm" onClick={() => addMember(inviteDraft)} disabled={!inviteDraft}><UserPlus className="size-3.5" />Adicionar</Button>
                   </div>
-                  <button type="button" onClick={leaveGroup} className="mt-3 flex items-center gap-1.5 text-[11px] font-extrabold text-clinical-red transition hover:opacity-80"><DoorOpen className="size-3.5" />Sair do grupo</button>
+                  <button type="button" onClick={leaveGroup} className="mt-3 flex items-center gap-1.5 text-[11px] font-extrabold text-ebot-red transition hover:opacity-80"><DoorOpen className="size-3.5" />Sair do grupo</button>
                 </aside>
               ) : null}
 
-              <div className="chat-dots clinical-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+              <div className="chat-dots ebot-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
                 {selectedMessages.length ? <div role="log" aria-live="polite" aria-relevant="additions text" aria-label={`Mensagens com ${selected.name}`} className="space-y-3">{selectedMessages.map((message) => <MessageBubble key={message.id} message={message} mine={message.from === "me"} playing={playingId === message.id} onPlay={() => setPlayingId((current) => current === message.id ? null : message.id)} />)}</div> : <StatePanel icon={MessageCircle} title="Comece a conversa" description={`Envie uma mensagem para ${selected.name}. Este chat será mantido localmente nesta sessão.`} />}
               </div>
 
               <div aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</div>
-              <div className="border-t border-clinical-border/[0.12]" aria-busy={composerState === "sending"}>
-                {composerState === "sending" ? <div role="status" className="flex items-center gap-2 px-4 pt-3 text-xs font-bold text-clinical-blue"><span className="size-2 animate-pulse rounded-full bg-clinical-blue" />Enviando mensagem localmente...</div> : null}
-                {composerState === "sent" ? <div role="status" className="flex items-center gap-2 px-4 pt-3 text-xs font-bold text-clinical-green"><Check className="size-4" />Mensagem enviada</div> : null}
+              <div className="border-t border-ebot-border/[0.12]" aria-busy={composerState === "sending"}>
+                {composerState === "sending" ? <div role="status" className="flex items-center gap-2 px-4 pt-3 text-xs font-bold text-ebot-primary"><span className="size-2 animate-pulse rounded-full bg-ebot-primary" />Enviando mensagem localmente...</div> : null}
+                {composerState === "sent" ? <div role="status" className="flex items-center gap-2 px-4 pt-3 text-xs font-bold text-ebot-green"><Check className="size-4" />Mensagem enviada</div> : null}
                 {composerState === "error" ? <div role="alert" className="flex flex-wrap items-center justify-between gap-2 px-4 pt-3 text-xs font-bold text-red-500"><span>{composerError}</span>{lastFailedMessage ? <Button size="sm" variant="secondary" onClick={() => sendMessage(lastFailedMessage)}>Tentar novamente</Button> : null}</div> : null}
                 <ChatComposer onSend={sendMessage} placeholder={`Mensagem para ${selected.name}`} />
               </div>
@@ -378,27 +378,27 @@ export function ChatsPage() {
 
       <Modal open={newChatOpen} onClose={() => setNewChatOpen(false)} title="Novo chat" eyebrow="Comunicação interna" description="Crie uma conversa local com uma pessoa ou canal da equipe." icon={UserPlus} className="max-w-xl">
         <form onSubmit={createChat} className="space-y-4">
-          <ModalField name="name" label="Nome da conversa" icon={MessageCircle} placeholder={newChatType === "team" ? "Ex.: Equipe Recepção" : "Ex.: Camila Rodrigues"} required />
+          <ModalField name="name" label="Nome da conversa" icon={MessageCircle} placeholder={newChatType === "team" ? "Ex.: Equipe Atendimento" : "Ex.: Camila Rodrigues"} required />
           <div className="grid gap-3 sm:grid-cols-2">
-            <ModalChoice label="Conversa individual" description="Fale com uma pessoa da equipe clínica." icon={UserPlus} active={newChatType === "individual"} onClick={() => setNewChatType("individual")} />
+            <ModalChoice label="Conversa individual" description="Fale com uma pessoa da equipe empresa." icon={UserPlus} active={newChatType === "individual"} onClick={() => setNewChatType("individual")} />
             <ModalChoice label="Canal da equipe" description="Espaço compartilhado com membros selecionados." icon={UsersRound} active={newChatType === "team"} onClick={() => setNewChatType("team")} />
           </div>
           {newChatType === "team" ? (
             <fieldset>
-              <legend className="mb-1.5 block text-xs font-extrabold text-clinical-slate">Membros do canal</legend>
-              <div className="clinical-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/25 p-2">
+              <legend className="mb-1.5 block text-xs font-extrabold text-ebot-slate">Membros do canal</legend>
+              <div className="ebot-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/25 p-2">
                 {candidates.map((candidate) => (
-                  <label key={candidate.id} className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-clinical-surfaceMuted/70">
-                    <input type="checkbox" name="member" value={candidate.name} className="size-4 accent-clinical-blue" />
+                  <label key={candidate.id} className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-ebot-surfaceMuted/70">
+                    <input type="checkbox" name="member" value={candidate.name} className="size-4 accent-ebot-primary" />
                     <span className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-extrabold text-white" style={{ backgroundColor: candidate.avatarColor }}>{initialsFromName(candidate.name)}</span>
-                    <span className="min-w-0 flex-1 truncate text-[12px] font-extrabold text-clinical-dark">{candidate.name}</span>
-                    <span className="text-[10px] font-bold text-clinical-muted">{candidate.role}</span>
+                    <span className="min-w-0 flex-1 truncate text-[12px] font-extrabold text-ebot-dark">{candidate.name}</span>
+                    <span className="text-[10px] font-bold text-ebot-muted">{candidate.role}</span>
                   </label>
                 ))}
               </div>
             </fieldset>
           ) : null}
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4"><Button type="button" variant="ghost" onClick={() => setNewChatOpen(false)}>Cancelar</Button><Button type="submit">{newChatType === "team" ? <UsersRound className="size-4" /> : <UserPlus className="size-4" />}{newChatType === "team" ? "Criar canal" : "Criar chat"}</Button></div>
+          <div className="flex justify-end gap-2 border-t border-ebot-border/[0.12] pt-4"><Button type="button" variant="ghost" onClick={() => setNewChatOpen(false)}>Cancelar</Button><Button type="submit">{newChatType === "team" ? <UsersRound className="size-4" /> : <UserPlus className="size-4" />}{newChatType === "team" ? "Criar canal" : "Criar chat"}</Button></div>
         </form>
       </Modal>
     </div>

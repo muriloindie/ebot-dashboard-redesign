@@ -26,6 +26,17 @@ export type ContactList = {
   createdBy: string;
 };
 
+export type ContactEntry = {
+  id: string;
+  listId: string;
+  name: string;
+  phone: string;
+  channel: "WhatsApp" | "Instagram" | "E-mail";
+  consent: boolean;
+  addedAt: string;
+  addedBy: string;
+};
+
 export type CampaignSettings = {
   sender: string;
   dailyLimit: number;
@@ -49,6 +60,16 @@ export type Sector = {
   updatedAt: string;
 };
 
+export type QueueScheduleSlot = { day: string; enabled: boolean; start: string; end: string };
+
+export type QueueOption = {
+  id: string;
+  order: number;
+  label: string;
+  target: string;
+  response?: string;
+};
+
 export type Queue = {
   id: string;
   name: string;
@@ -62,7 +83,25 @@ export type Queue = {
   activeAgents: number;
   totalAgents: number;
   active: boolean;
+  botTransfers: boolean;
+  integration: string;
+  prompt: string;
+  outOfHoursMessage: string;
+  options: QueueOption[];
+  schedule: QueueScheduleSlot[];
 };
+
+export function defaultQueueSchedule(): QueueScheduleSlot[] {
+  return [
+    { day: "Segunda", enabled: true, start: "08:00", end: "18:00" },
+    { day: "Terça", enabled: true, start: "08:00", end: "18:00" },
+    { day: "Quarta", enabled: true, start: "08:00", end: "18:00" },
+    { day: "Quinta", enabled: true, start: "08:00", end: "18:00" },
+    { day: "Sexta", enabled: true, start: "08:00", end: "18:00" },
+    { day: "Sábado", enabled: false, start: "08:00", end: "12:00" },
+    { day: "Domingo", enabled: false, start: "08:00", end: "12:00" }
+  ];
+}
 
 export type StaffUser = {
   id: string;
@@ -129,4 +168,54 @@ export type HelpTopic = {
   category: string;
 };
 
-export type AppConfigSection = "geral" | "notificacoes" | "aparencia" | "seguranca";
+export type HelpVideo = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  duration: string;
+  icon: string;
+  views: number;
+  featured: boolean;
+  createdAt: string;
+};
+
+export type TypebotAgentOption = {
+  id: string;
+  order: number;
+  identifier: string;
+  key: string;
+  description: string;
+};
+
+export type TypebotAgentConfig = {
+  agentName: string;
+  companyName: string;
+  companyDescription: string;
+  businessRules: string;
+  companyContext: string;
+  extraInfo: string;
+  welcomeMessage: string;
+  queueIntegrationId: string;
+  options: TypebotAgentOption[];
+};
+
+export type TypebotIntegration = {
+  id: string;
+  name: string;
+  url: string;
+  slug: string;
+  expireMinutes: number;
+  messageIntervalMs: number;
+  finishWord: string;
+  restartWord: string;
+  invalidOptionMessage: string;
+  restartMessage: string;
+  status: "connected" | "attention" | "disconnected";
+  lastSync: string;
+  agent: TypebotAgentConfig;
+};
+
+export type AppConfigSection = "geral" | "notificacoes" | "aparencia" | "seguranca" | "ia";

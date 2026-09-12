@@ -19,19 +19,19 @@ const sizes = {
 };
 
 const tones = {
-  charcoal: "bg-clinical-charcoal text-white",
-  blue: "bg-clinical-blue text-clinical-charcoal",
-  green: "bg-clinical-green text-white",
-  teal: "bg-clinical-teal text-white",
-  orange: "bg-clinical-orange text-white",
-  whatsapp: "bg-clinical-whatsapp text-white",
-  muted: "bg-clinical-surfaceMuted text-clinical-muted"
+  charcoal: "bg-ebot-charcoal text-white",
+  blue: "bg-ebot-primary text-ebot-charcoal",
+  green: "bg-ebot-green text-white",
+  teal: "bg-ebot-teal text-white",
+  orange: "bg-ebot-orange text-white",
+  whatsapp: "bg-ebot-whatsapp text-white",
+  muted: "bg-ebot-surfaceMuted text-ebot-muted"
 };
 
 const statusStyles = {
-  online: "bg-clinical-green",
-  busy: "bg-clinical-orange",
-  offline: "bg-clinical-muted/45"
+  online: "bg-ebot-green",
+  busy: "bg-ebot-orange",
+  offline: "bg-ebot-muted/45"
 };
 
 export function getInitials(name: string) {
@@ -55,7 +55,7 @@ export function Avatar({ name, src, size = "md", tone = "charcoal", status, clas
         getInitials(name)
       )}
       {status ? (
-        <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-clinical-surface", statusStyles[status])} />
+        <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-ebot-surface", statusStyles[status])} />
       ) : null}
     </span>
   );

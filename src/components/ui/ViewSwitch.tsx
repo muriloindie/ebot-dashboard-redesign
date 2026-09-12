@@ -10,7 +10,7 @@ type ViewSwitchProps = {
 
 export function ViewSwitch({ views, value, onChange, className }: ViewSwitchProps) {
   return (
-    <div role="tablist" aria-label="Visualização" className={cn("flex shrink-0 gap-1 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/55 p-1", className)}>
+    <div role="tablist" aria-label="Visualização" className={cn("flex shrink-0 gap-1 rounded-2xl border border-ebot-border/[0.12] bg-ebot-surfaceMuted/55 p-1", className)}>
       {views.map((view) => {
         const Icon = view.icon;
         const active = value === view.id;
@@ -23,7 +23,7 @@ export function ViewSwitch({ views, value, onChange, className }: ViewSwitchProp
             onClick={() => onChange(view.id)}
             className={cn(
               "flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-extrabold transition",
-              active ? "bg-clinical-surface text-clinical-blue shadow-sm" : "text-clinical-muted hover:text-clinical-dark"
+              active ? "bg-ebot-surface text-ebot-primary shadow-sm" : "text-ebot-muted hover:text-ebot-dark"
             )}
           >
             <Icon className="size-4" />

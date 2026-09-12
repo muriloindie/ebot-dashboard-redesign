@@ -8,12 +8,12 @@ type StatusPillProps = {
 };
 
 const toneClasses: Record<StatusTone, string> = {
-  success: "border-clinical-green/20 bg-clinical-green/10 text-clinical-green",
-  warning: "border-clinical-orange/25 bg-clinical-orange/10 text-clinical-orange",
-  info: "border-clinical-blue/20 bg-clinical-blue/10 text-clinical-blueText",
+  success: "border-ebot-green/20 bg-ebot-green/10 text-ebot-green",
+  warning: "border-ebot-orange/25 bg-ebot-orange/10 text-ebot-orange",
+  info: "border-ebot-primary/20 bg-ebot-primary/10 text-ebot-primaryText",
   danger: "border-red-400/25 bg-red-500/[0.10] text-red-500",
-  neutral: "border-clinical-border/[0.10] bg-clinical-surfaceMuted text-clinical-muted",
-  whatsapp: "border-clinical-whatsapp/20 bg-clinical-whatsapp/10 text-clinical-whatsapp"
+  neutral: "border-ebot-border/[0.10] bg-ebot-surfaceMuted text-ebot-muted",
+  whatsapp: "border-ebot-whatsapp/20 bg-ebot-whatsapp/10 text-ebot-whatsapp"
 };
 
 export function StatusPill({ children, tone = "neutral", className }: StatusPillProps) {

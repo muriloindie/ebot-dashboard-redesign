@@ -1,501 +1,270 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  Activity,
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  Ban,
-  BellRing,
-  Bot,
-  CalendarClock,
   Check,
-  CheckCircle2,
-  ClipboardList,
-  Clock3,
-  FileText,
-  FlaskConical,
-  GripVertical,
-  HeartPulse,
-  Layers3,
-  ListChecks,
-  MessageSquareText,
-  Phone,
-  Pencil,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  Save,
+  Download,
+  Eye,
+  FileDown,
+  Hash,
+  LayoutGrid,
+  LayoutList,
+  List,
   SearchX,
-  Send,
-  ShieldCheck,
-  Stethoscope,
-  Trash2,
-  UserPlus,
-  UserRound,
-  X,
-  type LucideIcon
+  UsersRound,
+  X
 } from "lucide-react";
-import { protocolTemplates, protocolCategories, type ProtocolCategory, type ProtocolStatus, type ProtocolStep, type ProtocolTemplate } from "@/data/protocolTemplatesMock";
-import { readLocalCache, writeLocalCache } from "@/lib/localCache";
+import { protocolCategories, protocolStatuses, type ProtocolRecord } from "@/data/protocolsMock";
+import { listProtocols } from "@/lib/protocols/protocolsService";
+import { PROTOCOL_EXPORT_FORMATS, PROTOCOL_EXPORT_SECTIONS, exportProtocol, type ProtocolExportFormat, type ProtocolExportSection } from "@/lib/protocols/protocolExport";
+import { categoryMeta, ProtocolField, statusBadgeTone } from "@/components/operations/ProtocolReport";
 import { usePageEnter } from "@/lib/usePageEnter";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { Drawer } from "@/components/ui/Drawer";
-import { Modal } from "@/components/ui/Modal";
-import { ModalField, ModalSelect, ModalTextarea } from "@/components/ui/ModalField";
 import { Dropdown } from "@/components/ui/Dropdown";
-import { PageHeader, SearchField, StatePanel } from "@/components/ui/Week1Primitives";
+import { Modal } from "@/components/ui/Modal";
+import { PageHeader, SearchField, StatePanel, StatusBadge } from "@/components/ui/Week1Primitives";
+import { ViewSwitch } from "@/components/ui/ViewSwitch";
 import { cn } from "@/lib/cn";
 
-const CACHE_KEY = "ebot-week2-protocols";
 const ALL = "Todos";
-
-const categoryTone: Record<ProtocolCategory, "blue" | "green" | "orange" | "teal" | "neutral"> = {
-  Atendimento: "blue",
-  Agendamento: "teal",
-  Confirmação: "blue",
-  "Pós-consulta": "green",
-  Cancelamento: "neutral",
-  Reagendamento: "orange",
-  Exames: "green"
-};
-
-const statusTone: Record<ProtocolStatus, "green" | "orange" | "neutral"> = {
-  Ativo: "green",
-  Rascunho: "orange",
-  Inativo: "neutral"
-};
-
-const categoryIconTone: Record<ProtocolCategory, string> = {
-  Atendimento: "bg-clinical-blue/10 text-clinical-blueText",
-  Agendamento: "bg-clinical-teal/12 text-clinical-teal",
-  Confirmação: "bg-clinical-blue/10 text-clinical-blueText",
-  "Pós-consulta": "bg-clinical-green/12 text-clinical-green",
-  Cancelamento: "bg-clinical-surfaceMuted text-clinical-muted",
-  Reagendamento: "bg-clinical-orange/12 text-clinical-orange",
-  Exames: "bg-clinical-green/12 text-clinical-green"
-};
 
 export function ProtocolsPage() {
   const pageRef = useRef<HTMLDivElement>(null);
-  const [rows, setRows] = useState<ProtocolTemplate[]>(protocolTemplates);
+  const router = useRouter();
+  const [rows, setRows] = useState<ProtocolRecord[]>(() => listProtocols());
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(ALL);
   const [status, setStatus] = useState(ALL);
+  const [sector, setSector] = useState(ALL);
+  const [queue, setQueue] = useState(ALL);
   const [responsible, setResponsible] = useState(ALL);
-  const [selected, setSelected] = useState<ProtocolTemplate | null>(null);
-  const [newOpen, setNewOpen] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [stepFormOpen, setStepFormOpen] = useState(false);
-  const [assignResponsible, setAssignResponsible] = useState(false);
-  const [responsibleValue, setResponsibleValue] = useState(ALL);
-  const [selectedIcon, setSelectedIcon] = useState("ClipboardList");
+  const [view, setView] = useState<"lista" | "cards">("lista");
+  const [downloading, setDownloading] = useState<ProtocolRecord | null>(null);
+  const [sections, setSections] = useState<ProtocolExportSection[]>(["resumo", "dados", "mensagens"]);
+  const [format, setFormat] = useState<ProtocolExportFormat>("excel");
 
   usePageEnter(pageRef, [
     { selector: "[data-protocol-card]", from: { opacity: 0, y: 18 } },
     { selector: "[data-search-bar]", from: { opacity: 0, y: 14 }, to: { duration: 0.45, ease: "power3.out" } }
-  ], { stagger: 0.07, delay: 0.05 });
+  ], { stagger: 0.06, delay: 0.05 });
 
-  useEffect(() => setRows(readLocalCache(CACHE_KEY, protocolTemplates)), []);
-
-  useEffect(() => {
-    setEditing(false);
-    setStepFormOpen(false);
-  }, [selected?.id]);
-
-  const responsibles = Array.from(new Set(rows.map((row) => row.responsible)));
-  const hasFilters = category !== ALL || status !== ALL || responsible !== ALL;
+  const sectors = useMemo(() => Array.from(new Set(rows.map((row) => row.sector))).sort(), [rows]);
+  const queues = useMemo(() => Array.from(new Set(rows.map((row) => row.queue))).sort(), [rows]);
+  const responsibles = useMemo(() => Array.from(new Set(rows.map((row) => row.responsible))).sort(), [rows]);
+  const hasFilters = category !== ALL || status !== ALL || sector !== ALL || queue !== ALL || responsible !== ALL;
 
   const filtered = useMemo(() => {
+    const query = search.toLowerCase().trim();
     return rows.filter((row) => {
-      const matchesSearch = `${row.name} ${row.description} ${row.id}`.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = category === ALL || row.category === category;
-      const matchesStatus = status === ALL || row.status === status;
-      const matchesResponsible = responsible === ALL || row.responsible === responsible;
-      return matchesSearch && matchesCategory && matchesStatus && matchesResponsible;
+      const searchable = [row.id, row.number, row.title, row.clientName, row.clientId, row.phone, row.user, row.sector, row.queue, row.responsible, row.channel, row.summary].join(" ").toLowerCase();
+      return searchable.includes(query)
+        && (category === ALL || row.category === category)
+        && (status === ALL || row.status === status)
+        && (sector === ALL || row.sector === sector)
+        && (queue === ALL || row.queue === queue)
+        && (responsible === ALL || row.responsible === responsible);
     });
-  }, [rows, search, category, status, responsible]);
-
-  const totalUses = rows.reduce((sum, row) => sum + row.uses, 0);
-  const activeCount = rows.filter((row) => row.status === "Ativo").length;
-
-  function showNotice(message: string) {
-    setNotice(message);
-    window.setTimeout(() => setNotice(""), 3200);
-  }
-
-  function persist(next: ProtocolTemplate[]) {
-    setRows(next);
-    writeLocalCache(CACHE_KEY, next);
-  }
-
-  function updateSelected(nextProtocol: ProtocolTemplate, message: string) {
-    persist(rows.map((row) => row.id === nextProtocol.id ? nextProtocol : row));
-    setSelected(nextProtocol);
-    showNotice(message);
-  }
-
-  function createProtocol(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const name = String(form.get("name") ?? "").trim();
-    const description = String(form.get("description") ?? "").trim();
-    const stepTitle = String(form.get("stepTitle") ?? "").trim();
-    const stepDescription = String(form.get("stepDescription") ?? "").trim();
-    const stepChannel = String(form.get("stepChannel") ?? "WhatsApp").trim();
-    const stepTrigger = String(form.get("stepTrigger") ?? "Início do contato").trim();
-    if (!name || !description || !stepTitle || !stepDescription || !stepTrigger) {
-      showNotice("Preencha o nome, a descrição e os dados da primeira etapa.");
-      return;
-    }
-    const formResponsible = String(form.get("responsible") ?? responsibleValue);
-    const next: ProtocolTemplate = {
-      id: `PT-${String(rows.length + 8).padStart(2, "0")}`,
-      name,
-      category: String(form.get("category")) as ProtocolCategory,
-      status: String(form.get("status")) as ProtocolStatus,
-      responsible: assignResponsible && formResponsible !== ALL ? formResponsible : "IA + equipe",
-      icon: String(form.get("icon") ?? "ClipboardList"),
-      updatedAt: "Hoje",
-      uses: 0,
-      description,
-      steps: [
-        { id: `s-${Date.now()}`, title: stepTitle, description: stepDescription, channel: stepChannel, trigger: stepTrigger }
-      ]
-    };
-    persist([...rows, next]);
-    setNewOpen(false);
-    setSelected(next);
-    showNotice(`Protocolo "${name}" criado como ${next.status}.`);
-  }
-
-  function saveProtocol(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selected) return;
-
-    const form = new FormData(event.currentTarget);
-    const name = String(form.get("name") ?? "").trim();
-    const description = String(form.get("description") ?? "").trim();
-    if (!name || !description) {
-      showNotice("Informe o nome e a descrição do protocolo.");
-      return;
-    }
-
-    const nextProtocol: ProtocolTemplate = {
-      ...selected,
-      name,
-      description,
-      category: String(form.get("category") ?? selected.category) as ProtocolCategory,
-      status: String(form.get("status") ?? selected.status) as ProtocolStatus,
-      responsible: String(form.get("responsible") ?? selected.responsible),
-      updatedAt: "Agora"
-    };
-    updateSelected(nextProtocol, `Protocolo "${name}" atualizado localmente.`);
-    setEditing(false);
-  }
-
-  function addStep(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selected) return;
-
-    const form = new FormData(event.currentTarget);
-    const title = String(form.get("title") ?? "").trim();
-    const description = String(form.get("description") ?? "").trim();
-    const channel = String(form.get("channel") ?? "WhatsApp").trim();
-    const trigger = String(form.get("trigger") ?? "").trim();
-    if (!title || !description || !trigger) {
-      showNotice("Preencha título, descrição e gatilho da etapa.");
-      return;
-    }
-
-    const step: ProtocolStep = { id: `s-${Date.now()}`, title, description, channel, trigger };
-    updateSelected({ ...selected, steps: [...selected.steps, step], updatedAt: "Agora" }, "Etapa adicionada ao fluxo.");
-    setStepFormOpen(false);
-  }
-
-  function removeStep(stepId: string) {
-    if (!selected) return;
-    updateSelected({ ...selected, steps: selected.steps.filter((step) => step.id !== stepId), updatedAt: "Agora" }, "Etapa removida do fluxo.");
-  }
-
-  function moveStep(index: number, direction: -1 | 1) {
-    if (!selected) return;
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= selected.steps.length) return;
-    const steps = [...selected.steps];
-    [steps[index], steps[targetIndex]] = [steps[targetIndex], steps[index]];
-    updateSelected({ ...selected, steps, updatedAt: "Agora" }, "Ordem das etapas salva localmente.");
-  }
+  }, [rows, search, category, status, sector, queue, responsible]);
 
   function clearFilters() {
     setSearch("");
     setCategory(ALL);
     setStatus(ALL);
+    setSector(ALL);
+    setQueue(ALL);
     setResponsible(ALL);
   }
 
+  function openContact(protocol: ProtocolRecord) {
+    router.push(`/contatos?q=${encodeURIComponent(protocol.phone || protocol.clientName)}`);
+  }
+
+  function openProtocol(protocol: ProtocolRecord) {
+    router.push(`/protocolos/${protocol.id}`);
+  }
+
+  function toggleSection(section: ProtocolExportSection) {
+    setSections((current) => (current.includes(section) ? current.filter((item) => item !== section) : [...current, section]));
+  }
+
+  function openDownload(protocol: ProtocolRecord) {
+    setSections(["resumo", "dados", "mensagens"]);
+    setFormat("excel");
+    setDownloading(protocol);
+  }
+
+  function confirmDownload() {
+    if (!downloading) return;
+    if (!sections.length) return;
+    const ok = exportProtocol(downloading, sections, format);
+    const name = downloading.number;
+    setDownloading(null);
+    if (!ok) window.alert(`Não foi possível gerar o arquivo do protocolo ${name}.`);
+  }
+
   return (
-    <div ref={pageRef}>
+    <div ref={pageRef} data-protocols-page>
       <PageHeader
-        eyebrow="Pacientes / Automação clínica"
+        eyebrow="Clientes / Histórico operacional"
         title="Protocolos"
-        description="Fluxos operacionais e clínicos que padronizam e automatizam o atendimento."
-        aside={
-          <span className="inline-flex items-center gap-2 rounded-full bg-clinical-green/[0.09] px-3 py-2 text-xs font-extrabold text-clinical-green">
-            <Activity className="size-4" />{activeCount} ativos · {totalUses} utilizações
-          </span>
-        }
-        action={<Button onClick={() => setNewOpen(true)}><Plus className="size-4" />Novo protocolo</Button>}
+        description="Cada protocolo é um atendimento específico com número único, cliente vinculado e logs completos da conversa."
+        aside={<span className="inline-flex items-center gap-2 rounded-full bg-ebot-primary/[0.09] px-3 py-2 text-xs font-extrabold text-ebot-primaryText"><LayoutList className="size-4" />{rows.length} atendimentos registrados</span>}
       />
 
-      {notice ? (
-        <div role="status" className="mb-4 flex items-center justify-between rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-4 py-3 text-sm font-bold text-clinical-green">
-          <span className="flex items-center gap-2"><Check className="size-4" />{notice}</span>
-          <button type="button" onClick={() => setNotice("")} aria-label="Fechar aviso"><X className="size-4" /></button>
+      <div data-search-bar className="mb-4 rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/70 p-2.5">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+          <SearchField value={search} onChange={(value) => { setSearch(value); setRows(listProtocols()); }} placeholder="Buscar por nº, cliente, usuário, setor ou fila" />
+          <ViewSwitch
+            views={[{ id: "lista", label: "Lista", icon: List }, { id: "cards", label: "Cards", icon: LayoutGrid }]}
+            value={view}
+            onChange={(id) => setView(id as "lista" | "cards")}
+            className="self-end lg:self-auto"
+          />
+          {hasFilters || search ? <Button variant="secondary" size="sm" onClick={clearFilters} className="self-end lg:self-auto"><X className="size-4" />Limpar filtros</Button> : null}
         </div>
-      ) : null}
-
-      <div data-search-bar className="mb-4 flex flex-col gap-2 rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/70 p-2.5 lg:flex-row lg:items-center">
-        <SearchField value={search} onChange={setSearch} placeholder="Buscar protocolo por nome ou descrição" />
-        <div className="grid shrink-0 grid-cols-3 gap-2 xl:flex">
-          <Dropdown label="Categoria" value={category} options={[ALL, ...protocolCategories]} onChange={setCategory} />
-          <Dropdown label="Status" value={status} options={[ALL, "Ativo", "Rascunho", "Inativo"]} onChange={setStatus} />
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+          <Dropdown label="Tipo" value={category} options={[ALL, ...protocolCategories]} onChange={setCategory} />
+          <Dropdown label="Status" value={status} options={[ALL, ...protocolStatuses]} onChange={setStatus} />
+          <Dropdown label="Setor" value={sector} options={[ALL, ...sectors]} onChange={setSector} />
+          <Dropdown label="Fila" value={queue} options={[ALL, ...queues]} onChange={setQueue} />
           <Dropdown label="Responsável" value={responsible} options={[ALL, ...responsibles]} onChange={setResponsible} />
         </div>
-        {hasFilters ? (
-          <Button variant="secondary" size="sm" onClick={clearFilters} className="shrink-0"><X className="size-4" />Limpar</Button>
-        ) : null}
       </div>
 
       {filtered.length === 0 ? (
-        <StatePanel
-          icon={SearchX}
-          title="Nenhum protocolo encontrado"
-          description="Ajuste a busca ou os filtros de categoria, status e responsável."
-          action={<Button size="sm" variant="secondary" onClick={clearFilters}>Limpar filtros</Button>}
-        />
+        <StatePanel icon={SearchX} title="Nenhum atendimento encontrado" description="Ajuste a busca ou os filtros de tipo, status, setor e fila." action={<Button size="sm" variant="secondary" onClick={clearFilters}>Limpar filtros</Button>} />
+      ) : view === "lista" ? (
+        <div className="overflow-hidden rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/80 shadow-[0_8px_22px_rgba(4,27,21,0.04)]">
+          <ul className="divide-y divide-ebot-border/[0.08]" aria-label="Lista de protocolos">
+            {filtered.map((protocol) => (
+              <li key={protocol.id} data-protocol-row data-protocol-id={protocol.id} className="flex items-center gap-3 px-3 py-2 transition hover:bg-ebot-primary/[0.035] sm:gap-4 sm:px-4">
+                <span className="hidden w-36 shrink-0 font-mono text-[11px] font-extrabold text-ebot-primaryText md:block" title={protocol.number}>{protocol.number}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <Avatar name={protocol.clientName} size="sm" className="shrink-0" />
+                  <span className="min-w-0">
+                    <button type="button" onClick={() => openContact(protocol)} title="Abrir contato" className="block max-w-full truncate text-left text-[13px] font-extrabold text-ebot-dark underline-offset-2 transition hover:text-ebot-primary hover:underline">
+                      {protocol.clientName}
+                    </button>
+                    <span className="block truncate text-[11px] font-bold text-ebot-muted">{protocol.clientId} · {protocol.user}</span>
+                  </span>
+                </span>
+                <span className="hidden w-44 shrink-0 truncate text-[12px] font-semibold text-ebot-muted lg:block" title={`${protocol.sector} · ${protocol.queue}`}>{protocol.sector} · {protocol.queue}</span>
+                <span className="hidden shrink-0 text-[12px] font-bold tabular-nums text-ebot-muted sm:block">{protocol.date}</span>
+                <StatusBadge label={protocol.status} tone={statusBadgeTone(protocol.status)} />
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <Button size="sm" variant="secondary" onClick={() => openProtocol(protocol)} aria-label={`Ver relatório do protocolo ${protocol.number}`}><Eye className="size-3.5" />Relatório</Button>
+                  <button type="button" onClick={() => openDownload(protocol)} aria-label={`Baixar protocolo ${protocol.number}`} title="Baixar protocolo" className="flex size-9 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-ebot-primary/10 hover:text-ebot-primary"><Download className="size-4" /></button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {filtered.map((protocol) => (
-            <button
-              key={protocol.id}
-              type="button"
-              data-protocol-card
-              onClick={() => setSelected(protocol)}
-              className="animate-list-in flex min-h-[240px] flex-col rounded-[24px] border border-clinical-border/[0.14] bg-clinical-surface/75 p-5 text-left shadow-[0_8px_22px_rgba(38,53,50,0.04)] transition duration-200 hover:-translate-y-0.5 hover:border-clinical-blue/30 hover:bg-clinical-surface hover:shadow-card dark:shadow-[0_12px_32px_rgba(0,0,0,0.16)]"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl", categoryIconTone[protocol.category])}>
-                  <ProtocolIcon name={protocol.icon} className="size-5" />
-                </span>
-                <div className="flex flex-col items-end gap-1.5">
-                  <Chip label={protocol.status} tone={statusTone[protocol.status]} />
-                  <Chip label={protocol.category} tone={categoryTone[protocol.category]} />
+          {filtered.map((protocol) => {
+            const meta = categoryMeta[protocol.category];
+            const Icon = meta.icon;
+            return (
+              <article key={protocol.id} data-protocol-card data-protocol-id={protocol.id} className="animate-list-in flex min-h-[278px] min-w-0 flex-col rounded-[24px] border border-ebot-border/[0.14] bg-ebot-surface/80 p-5 shadow-[0_8px_22px_rgba(4,27,21,0.04)] transition duration-200 hover:-translate-y-0.5 hover:border-ebot-primary/30 hover:shadow-card dark:shadow-[0_12px_32px_rgba(0,0,0,0.16)]">
+                <div className="flex items-start justify-between gap-3">
+                  <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl", meta.iconClass)}><Icon className="size-5" /></span>
+                  <div className="flex flex-col items-end gap-1.5"><StatusBadge label={protocol.status} tone={statusBadgeTone(protocol.status)} /><StatusBadge label={protocol.category} tone={meta.tone} /></div>
                 </div>
-              </div>
-              <h2 className="mt-4 text-base font-extrabold tracking-tight text-clinical-dark">{protocol.name}</h2>
-              <p className="mt-1.5 line-clamp-2 flex-1 text-[13px] leading-5 text-clinical-muted">{protocol.description}</p>
-              <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-clinical-border/[0.10] pt-3.5">
-                <div><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Etapas</dt><dd className="mt-0.5 flex items-center gap-1 text-[13px] font-extrabold text-clinical-dark"><ListChecks className="size-3.5 text-clinical-blue" />{protocol.steps.length}</dd></div>
-                <div><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Usos</dt><dd className="mt-0.5 text-[13px] font-extrabold tabular-nums text-clinical-dark">{protocol.uses}</dd></div>
-                <div><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Atualizado</dt><dd className="mt-0.5 text-[13px] font-extrabold text-clinical-dark">{protocol.updatedAt}</dd></div>
-              </dl>
-              <div className="mt-4 flex items-center justify-between gap-2">
-                <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-clinical-muted"><UserRound className="size-3.5 shrink-0" /><span className="truncate">{protocol.responsible}</span></span>
-                <span className="flex shrink-0 items-center gap-1 text-xs font-extrabold text-clinical-blueText">Ver fluxo <ArrowRight className="size-3.5" /></span>
-              </div>
-            </button>
-          ))}
+                <p className="mt-3 flex items-center gap-1.5 font-mono text-[12px] font-extrabold text-ebot-primaryText"><Hash className="size-3.5" />{protocol.number.replace(/^#/, "")}</p>
+                <div className="mt-2 flex min-w-0 items-center gap-3">
+                  <Avatar name={protocol.clientName} size="md" />
+                  <div className="min-w-0">
+                    <button type="button" onClick={() => openContact(protocol)} title="Abrir contato" className="block max-w-full truncate text-left text-base font-extrabold tracking-tight text-ebot-dark underline-offset-2 transition hover:text-ebot-primary hover:underline">
+                      {protocol.clientName}
+                    </button>
+                    <p className="truncate text-xs font-bold text-ebot-muted">{protocol.clientId} · {protocol.date}</p>
+                  </div>
+                </div>
+                <p className="mt-3 line-clamp-2 flex-1 text-[13px] leading-5 text-ebot-muted">{protocol.summary}</p>
+                <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-ebot-border/[0.10] pt-3.5">
+                  <ProtocolField label="Usuário" value={protocol.user} />
+                  <ProtocolField label="Setor / Fila" value={`${protocol.sector} · ${protocol.queue}`} />
+                  <ProtocolField label="Canal" value={protocol.channel} />
+                  <ProtocolField label="Duração" value={protocol.duration} />
+                </dl>
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-ebot-muted"><UsersRound className="size-3.5 shrink-0" /><span className="truncate">{protocol.responsible}</span></span>
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    <Button size="sm" variant="secondary" onClick={() => openProtocol(protocol)} aria-label={`Ver relatório do protocolo ${protocol.number}`}><Eye className="size-3.5" />Relatório</Button>
+                    <button type="button" onClick={() => openDownload(protocol)} aria-label={`Baixar protocolo ${protocol.number}`} title="Baixar protocolo" className="flex size-9 items-center justify-center rounded-xl text-ebot-muted transition hover:bg-ebot-primary/10 hover:text-ebot-primary"><Download className="size-4" /></button>
+                  </span>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 
-      <Drawer open={Boolean(selected)} onClose={() => { setSelected(null); setEditing(false); setStepFormOpen(false); }} title={selected?.name ?? "Protocolo"} description={selected ? `${selected.id} · ${selected.category}` : undefined} width="max-w-xl">
-        {selected ? (
-          <div>
-            {notice ? <div role="status" className="mb-4 flex items-center gap-2 rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.08] px-3 py-2.5 text-xs font-bold text-clinical-green"><Check className="size-4" />{notice}</div> : null}
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-clinical-blue/[0.07] p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl", categoryIconTone[selected.category])}>
-                  <ProtocolIcon name={selected.icon} className="size-4" />
+      <Modal
+        open={Boolean(downloading)}
+        onClose={() => setDownloading(null)}
+        title={downloading ? `Baixar ${downloading.number}` : "Baixar protocolo"}
+        eyebrow="Protocolos / Exportação"
+        description="Selecione as informações anexadas ao arquivo e o tipo de arquivo."
+        icon={FileDown}
+        className="max-w-md"
+      >
+        <p className="mb-2 text-sm font-extrabold text-ebot-dark">Informações anexadas</p>
+        <div className="space-y-2" role="group" aria-label="Informações anexadas">
+          {PROTOCOL_EXPORT_SECTIONS.map((item) => {
+            const active = sections.includes(item.id);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="checkbox"
+                aria-checked={active}
+                onClick={() => toggleSection(item.id)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition",
+                  active ? "border-ebot-primary/40 bg-ebot-primary/[0.08]" : "border-ebot-border/[0.12] bg-ebot-surfaceMuted/30 hover:border-ebot-primary/25"
+                )}
+              >
+                <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md border", active ? "border-ebot-primary bg-ebot-primary text-ebot-charcoal" : "border-ebot-border/[0.20] bg-ebot-surface")}>
+                  {active ? <Check className="size-3.5" /> : null}
                 </span>
-                <Chip label={selected.status} tone={statusTone[selected.status]} />
-                <Chip label={selected.category} tone={categoryTone[selected.category]} />
-                <span className="flex items-center gap-1.5 text-xs font-bold text-clinical-muted"><UserRound className="size-3.5" />{selected.responsible}</span>
-              </div>
-              <Button type="button" size="sm" variant="secondary" onClick={() => setEditing((value) => !value)}>{editing ? <><X className="size-3.5" />Cancelar</> : <><Pencil className="size-3.5" />Editar dados</>}</Button>
-            </div>
-
-            {editing ? (
-              <form key={`${selected.id}-${selected.updatedAt}`} onSubmit={saveProtocol} className="mt-4 space-y-3 rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/25 p-3">
-                <ModalField name="name" label="Nome do protocolo" icon={ClipboardList} defaultValue={selected.name} required />
-                <ModalTextarea name="description" label="Descrição" icon={FileText} defaultValue={selected.description} required />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <ModalSelect name="category" label="Categoria" icon={Layers3} defaultValue={selected.category}>{protocolCategories.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
-                  <ModalSelect name="status" label="Status" icon={Activity} defaultValue={selected.status}><option>Ativo</option><option>Rascunho</option><option>Inativo</option></ModalSelect>
-                  <ModalSelect name="responsible" label="Responsável" icon={UserRound} defaultValue={selected.responsible}>{Array.from(new Set(["IA + equipe", ...responsibles, selected.responsible])).map((item) => <option key={item}>{item}</option>)}</ModalSelect>
-                </div>
-                <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-3"><Button type="submit" size="sm"><Save className="size-3.5" />Salvar dados</Button></div>
-              </form>
-            ) : <p className="mt-4 text-sm leading-6 text-clinical-slate">{selected.description}</p>}
-
-            <dl className="mt-5 grid grid-cols-3 gap-3">
-              <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3"><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Utilizações</dt><dd className="mt-1 text-lg font-extrabold tabular-nums text-clinical-dark">{selected.uses}</dd></div>
-              <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3"><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Etapas</dt><dd className="mt-1 text-lg font-extrabold tabular-nums text-clinical-dark">{selected.steps.length}</dd></div>
-              <div className="rounded-2xl border border-clinical-border/[0.12] bg-clinical-surfaceMuted/35 p-3"><dt className="text-[10px] font-extrabold uppercase tracking-wider text-clinical-muted">Atualizado</dt><dd className="mt-1 text-lg font-extrabold text-clinical-dark">{selected.updatedAt}</dd></div>
-            </dl>
-
-            <div className="mb-3 mt-7 flex items-center justify-between gap-3">
-              <h3 className="flex items-center gap-2 text-sm font-extrabold text-clinical-dark"><ListChecks className="size-4 text-clinical-blue" />Etapas do fluxo</h3>
-              <Button type="button" size="sm" variant="secondary" onClick={() => setStepFormOpen((value) => !value)}><Plus className="size-3.5" />Adicionar etapa</Button>
-            </div>
-
-            {stepFormOpen ? (
-              <form onSubmit={addStep} className="mb-4 space-y-3 rounded-2xl border border-clinical-blue/20 bg-clinical-blue/[0.05] p-3">
-                <ModalField name="title" label="Título da etapa" icon={ListChecks} placeholder="Ex.: Confirmar dados" required />
-                <ModalTextarea name="description" label="Descrição" icon={FileText} placeholder="Descreva o que acontece nesta etapa." required />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <ModalSelect name="channel" label="Canal" icon={MessageSquareText} defaultValue="WhatsApp"><option>WhatsApp</option><option>IA + recepção</option><option>Sistema</option><option>Recepção</option><option>Telefone</option></ModalSelect>
-                  <ModalField name="trigger" label="Gatilho" icon={RefreshCw} placeholder="Ex.: Resposta do paciente" required />
-                </div>
-                <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setStepFormOpen(false)}>Cancelar</Button><Button type="submit" size="sm"><Plus className="size-3.5" />Salvar etapa</Button></div>
-              </form>
-            ) : null}
-
-            {selected.steps.length === 0 ? <StatePanel icon={ListChecks} title="Nenhuma etapa configurada" description="Adicione a primeira etapa para começar a montar este fluxo." action={<Button type="button" size="sm" variant="secondary" onClick={() => setStepFormOpen(true)}><Plus className="size-3.5" />Adicionar etapa</Button>} /> : <ol className="relative space-y-0">
-              {selected.steps.map((step, index) => (
-                <li key={step.id} className="relative flex gap-3.5 pb-5 last:pb-0">
-                  {index < selected.steps.length - 1 ? <span className="absolute left-[17px] top-9 h-[calc(100%-28px)] w-px bg-clinical-border/[0.16]" aria-hidden="true" /> : null}
-                  <span className="relative z-10 flex size-[34px] shrink-0 items-center justify-center rounded-xl border border-clinical-blue/25 bg-clinical-blue/10 text-[13px] font-black text-clinical-blue">{index + 1}</span>
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0"><p className="text-sm font-extrabold text-clinical-dark">{step.title}</p><p className="mt-1 text-[13px] leading-5 text-clinical-muted">{step.description}</p></div>
-                      <div className="flex shrink-0 items-center gap-0.5">
-                        <GripVertical className="mr-1 size-4 text-clinical-border" aria-hidden="true" />
-                        <button type="button" disabled={index === 0} onClick={() => moveStep(index, -1)} aria-label={`Mover ${step.title} para cima`} className="flex size-7 items-center justify-center rounded-lg text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-30"><ArrowUp className="size-3.5" /></button>
-                        <button type="button" disabled={index === selected.steps.length - 1} onClick={() => moveStep(index, 1)} aria-label={`Mover ${step.title} para baixo`} className="flex size-7 items-center justify-center rounded-lg text-clinical-muted transition hover:bg-clinical-blue/10 hover:text-clinical-blue disabled:cursor-not-allowed disabled:opacity-30"><ArrowDown className="size-3.5" /></button>
-                        <button type="button" onClick={() => removeStep(step.id)} aria-label={`Remover ${step.title}`} className="flex size-7 items-center justify-center rounded-lg text-clinical-muted transition hover:bg-red-500/10 hover:text-red-500"><Trash2 className="size-3.5" /></button>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-clinical-whatsapp/10 px-2.5 py-1 text-[11px] font-extrabold text-clinical-whatsapp"><Bot className="size-3" />{step.channel}</span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-clinical-surfaceMuted px-2.5 py-1 text-[11px] font-extrabold text-clinical-muted"><RefreshCw className="size-3" />{step.trigger}</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ol>}
-
-            <div className="mt-7 flex items-center gap-2 rounded-2xl border border-clinical-green/20 bg-clinical-green/[0.07] p-3 text-xs font-semibold leading-5 text-clinical-slate">
-              <Bot className="size-4 shrink-0 text-clinical-green" />
-              Este fluxo roda automaticamente pela IA do É-Bot, com handoff humano quando necessário.
-            </div>
-          </div>
-        ) : null}
-      </Drawer>
-
-      <Modal open={newOpen} onClose={() => setNewOpen(false)} title="Novo protocolo" eyebrow="Automação clínica" description="Crie um fluxo de atendimento padronizado para a equipe e a IA." icon={ClipboardList} className="max-w-xl">
-        <form onSubmit={createProtocol} className="space-y-4">
-          <ModalField name="name" label="Nome do protocolo" icon={ClipboardList} placeholder="Ex.: Pré-cirurgia, Acolhimento por telefone" required />
-          <ModalTextarea name="description" label="Descrição" icon={FileText} placeholder="Explique quando este fluxo deve ser usado e qual resultado ele busca." required />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ModalSelect name="category" label="Categoria" icon={Layers3} defaultValue="Atendimento">{protocolCategories.map((item) => <option key={item}>{item}</option>)}</ModalSelect>
-            <ModalSelect name="status" label="Status" icon={Activity} defaultValue="Rascunho"><option>Rascunho</option><option>Ativo</option><option>Inativo</option></ModalSelect>
-          </div>
-          <fieldset className="rounded-2xl border border-clinical-border/[0.12] p-3.5">
-            <legend className="px-1.5 text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">Ícone do protocolo</legend>
-            <input type="hidden" name="icon" value={selectedIcon} />
-            <div className="grid grid-cols-8 gap-1.5">
-              {pickableIcons.map((iconName) => {
-                const Icon = protocolIconMap[iconName];
-                const isSelected = selectedIcon === iconName;
-                return (
-                  <button
-                    key={iconName}
-                    type="button"
-                    onClick={() => setSelectedIcon(iconName)}
-                    aria-pressed={isSelected}
-                    title={iconName}
-                    className={cn(
-                      "flex aspect-square items-center justify-center rounded-xl border transition",
-                      isSelected
-                        ? "border-clinical-teal bg-clinical-teal/15 text-clinical-teal"
-                        : "border-clinical-border/[0.14] bg-clinical-surfaceMuted/40 text-clinical-muted hover:border-clinical-blue/30 hover:text-clinical-blueText"
-                    )}
-                  >
-                    <Icon className="size-4" />
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-2 text-[11px] font-semibold text-clinical-muted">O ícone aparece no card do protocolo e no catálogo de fluxos.</p>
-          </fieldset>
-          <div className="flex items-center gap-3 rounded-2xl border border-clinical-border/[0.12] p-3.5">
-            <label className="flex flex-1 cursor-pointer items-center gap-2 text-sm font-bold text-clinical-dark">
-              <input type="checkbox" checked={assignResponsible} onChange={(e) => setAssignResponsible(e.target.checked)} className="size-4 accent-clinical-teal" />
-              Colocar responsável
-            </label>
-            {assignResponsible ? (
-              <div className="w-52 shrink-0"><ModalSelect name="responsible" label="Responsável" icon={UserRound} value={responsibleValue} onChange={(event) => setResponsibleValue(event.target.value)}>{[ALL, ...responsibles].map((item) => <option key={item}>{item}</option>)}</ModalSelect></div>
-            ) : (
-              <span className="shrink-0 text-xs font-semibold text-clinical-muted">IA + equipe</span>
-            )}
-          </div>
-          <fieldset className="rounded-2xl border border-clinical-border/[0.12] p-3.5">
-            <legend className="px-1.5 text-[11px] font-extrabold uppercase tracking-wider text-clinical-muted">Primeira etapa</legend>
-            <div className="space-y-3">
-              <ModalField name="stepTitle" label="Título" icon={ListChecks} placeholder="Ex.: Boas-vindas" required />
-              <ModalTextarea name="stepDescription" label="Descrição da etapa" icon={FileText} placeholder="Descreva a ação da IA ou da equipe." required />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <ModalSelect name="stepChannel" label="Canal" icon={MessageSquareText} defaultValue="WhatsApp"><option>WhatsApp</option><option>IA + recepção</option><option>Sistema</option><option>Recepção</option><option>Telefone</option></ModalSelect>
-                <ModalField name="stepTrigger" label="Gatilho" icon={RefreshCw} placeholder="Ex.: Novo contato detectado" required />
-              </div>
-            </div>
-          </fieldset>
-          <div className="flex justify-end gap-2 border-t border-clinical-border/[0.12] pt-4">
-            <Button type="button" variant="ghost" onClick={() => setNewOpen(false)}>Cancelar</Button>
-            <Button type="submit"><Plus className="size-4" />Criar protocolo</Button>
-          </div>
-        </form>
+                <span className="min-w-0">
+                  <span className="block text-sm font-extrabold text-ebot-dark">{item.label}</span>
+                  <span className="block truncate text-[11px] font-bold text-ebot-muted">{item.hint}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mb-2 mt-4 text-sm font-extrabold text-ebot-dark">Tipo de arquivo</p>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo de arquivo">
+          {PROTOCOL_EXPORT_FORMATS.map((item) => {
+            const active = format === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setFormat(item.id)}
+                className={cn(
+                  "rounded-2xl border p-3 text-left transition",
+                  active ? "border-ebot-primary/40 bg-ebot-primary/[0.08]" : "border-ebot-border/[0.12] bg-ebot-surfaceMuted/30 hover:border-ebot-primary/25"
+                )}
+              >
+                <span className="block text-sm font-extrabold text-ebot-dark">{item.label}</span>
+                <span className="block truncate text-[11px] font-bold text-ebot-muted">{item.hint}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-4 flex justify-end gap-2 border-t border-ebot-border/[0.12] pt-4">
+          <Button type="button" variant="ghost" onClick={() => setDownloading(null)}>Cancelar</Button>
+          <Button onClick={confirmDownload} disabled={!sections.length}><Download className="size-4" />Baixar arquivo</Button>
+        </div>
       </Modal>
     </div>
   );
-}
-
-const protocolIconMap: Record<string, LucideIcon> = {
-  HeartPulse,
-  CalendarClock,
-  MessageSquareText,
-  Stethoscope,
-  Ban,
-  RotateCcw,
-  FlaskConical,
-  BellRing,
-  ClipboardList,
-  FileText,
-  Phone,
-  Send,
-  UserPlus,
-  ShieldCheck,
-  CheckCircle2,
-  Clock3
-};
-
-const pickableIcons = Object.keys(protocolIconMap);
-
-function ProtocolIcon({ name, className }: { name: string; className?: string }) {
-  const Icon = protocolIconMap[name] ?? Layers3;
-  return <Icon className={className} />;
-}
-
-function Chip({ label, tone }: { label: string; tone: "blue" | "green" | "orange" | "teal" | "neutral" }) {
-  const styles = {
-    blue: "bg-clinical-blue/10 text-clinical-blueText",
-    green: "bg-clinical-green/12 text-clinical-green",
-    orange: "bg-clinical-orange/12 text-clinical-orange",
-    teal: "bg-clinical-teal/12 text-clinical-teal",
-    neutral: "bg-clinical-surfaceMuted text-clinical-muted"
-  }[tone];
-  return <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-extrabold", styles)}>{label}</span>;
 }

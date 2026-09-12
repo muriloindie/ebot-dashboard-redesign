@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { FileSpreadsheet, FileText, FileType2, Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { metrics } from "@/data/dashboardMock";
+import { crmMetrics } from "@/data/dashboardMock";
+import { formatKpiValue } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 const formats = [
@@ -38,15 +39,15 @@ endobj
 4 0 obj
 << /Length 500 >>
 stream
-BT /F1 18 Tf 50 720 Td (Relatorio Operacional - Ê-Bot Clinical) Tj
+BT /F1 18 Tf 50 720 Td (Relatorio Operacional - Ê-Bot) Tj
 0 -30 Td /F1 12 Tf (Periodo: 14/07/2026 a 14/07/2026) Tj
-0 -25 Td (Clinica: Clínica São Lucas) Tj
-0 -40 Td /F1 14 Tf (Principais Indicadores:) Tj
-0 -25 Td /F1 12 Tf (Atendimentos hoje: 1.284) Tj
-0 -20 Td (Resolvidos pela IA: 73%) Tj
-0 -20 Td (Consultas confirmadas: 312) Tj
-0 -20 Td (Tempo medio de resposta: 18s) Tj
-0 -20 Td (Faltas evitadas: 38) Tj
+0 -25 Td (Empresa: Mecânica São Lucas) Tj
+0 -40 Td /F1 14 Tf (Principais Indicadores do CRM:) Tj
+0 -25 Td /F1 12 Tf (Pipeline aberto: R$ 63.400) Tj
+0 -20 Td (Ganhos no mes: R$ 51.200) Tj
+0 -20 Td (Leads qualificados: 186) Tj
+0 -20 Td (Conversao do funil: 24%) Tj
+0 -20 Td (Ticket medio: R$ 2.850) Tj
 ET
 endstream
 endobj
@@ -69,23 +70,23 @@ startxref
 }
 
 function generateMDContent() {
-  return `# Relatório Operacional - Ê-Bot Clinical
+  return `# Relatório Operacional - Ê-Bot
 
-**Clínica:** Clínica São Lucas  
+**Empresa:** Mecânica São Lucas  
 **Período:** 14/07/2026 a 14/07/2026  
 **Gerado em:** ${new Date().toLocaleString("pt-BR")}
 
-## Indicadores principais
+## Indicadores principais do CRM
 
 | Indicador | Valor | Variação |
 |---|---|---|
-${metrics.map((m) => `| ${m.title} | ${m.value}${m.format === "percent" ? "%" : ""} | ${m.delta || "—"} |`).join("\n")}
+${crmMetrics.map((m) => `| ${m.title} | ${formatKpiValue(m.value, m.format)} | ${m.delta || "—"} |`).join("\n")}
 
 ## Resumo operacional
 
-- Pico de atendimento entre 18h e 21h.
-- A IA resolveu 76% das conversas fora do horário comercial.
-- 3 horários foram liberados após cancelamentos.
+- Pico de atendimento entre 18h e 21h, com 82% absorvido pela IA.
+- 186 leads foram qualificados pela IA hoje.
+- 9 cobranças vencidas foram lembradas automaticamente pela API.
 
 > Este relatório é fictício e foi gerado para demonstração do dashboard.
 `;
@@ -93,7 +94,7 @@ ${metrics.map((m) => `| ${m.title} | ${m.value}${m.format === "percent" ? "%" : 
 
 function generateCSVContent() {
   const header = "Indicador,Valor,Formato,Variação\n";
-  const rows = metrics.map((m) => `"${m.title}",${m.value},${m.format},"${m.delta || ""}"`).join("\n");
+  const rows = crmMetrics.map((m) => `"${m.title}",${formatKpiValue(m.value, m.format)},${m.format},"${m.delta || ""}"`).join("\n");
   return `\ufeff${header}${rows}`;
 }
 
@@ -119,7 +120,7 @@ export function ExportReportModal({ open, onClose }: { open: boolean; onClose: (
 
   return (
     <Modal open={open} onClose={onClose} title="Exportar relatório" className="max-w-md">
-      <p className="mb-4 text-sm leading-6 text-clinical-muted">
+      <p className="mb-4 text-sm leading-6 text-ebot-muted">
         Escolha o formato do relatório operacional. O arquivo será gerado com dados fictícios para demonstração.
       </p>
 
@@ -133,20 +134,20 @@ export function ExportReportModal({ open, onClose }: { open: boolean; onClose: (
               onClick={() => setSelected(format.id)}
               className={cn(
                 "flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition",
-                active ? "border-clinical-blue bg-clinical-blue/[0.08]" : "border-clinical-border/[0.10] bg-clinical-surface/60 hover:bg-clinical-surface"
+                active ? "border-ebot-primary bg-ebot-primary/[0.08]" : "border-ebot-border/[0.10] bg-ebot-surface/60 hover:bg-ebot-surface"
               )}
             >
               <div
                 className={cn(
                   "flex size-11 items-center justify-center rounded-2xl",
-                  active ? "bg-clinical-blue text-white" : "bg-clinical-blue/10 text-clinical-blue"
+                  active ? "bg-ebot-primary text-ebot-charcoal" : "bg-ebot-primary/10 text-ebot-primary"
                 )}
               >
                 <Icon className="size-5" />
               </div>
               <div>
-                <p className={cn("text-sm font-extrabold", active ? "text-clinical-blue" : "text-clinical-dark")}>{format.label}</p>
-                <p className="text-[13px] font-medium text-clinical-muted">{format.description}</p>
+                <p className={cn("text-sm font-extrabold", active ? "text-ebot-primaryText" : "text-ebot-dark")}>{format.label}</p>
+                <p className="text-[13px] font-medium text-ebot-muted">{format.description}</p>
               </div>
             </button>
           );
@@ -157,14 +158,14 @@ export function ExportReportModal({ open, onClose }: { open: boolean; onClose: (
         <button
           onClick={onClose}
           disabled={exporting}
-          className="flex-1 rounded-2xl border border-clinical-blue/15 bg-clinical-surface px-4 py-3 text-sm font-bold text-clinical-slate transition hover:bg-clinical-blue/10 disabled:opacity-50"
+          className="flex-1 rounded-2xl border border-ebot-primary/15 bg-ebot-surface px-4 py-3 text-sm font-bold text-ebot-slate transition hover:bg-ebot-primary/10 disabled:opacity-50"
         >
           Cancelar
         </button>
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-clinical-blue px-4 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-clinical-blueHover disabled:opacity-80"
+          className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-ebot-primary px-4 py-3 text-sm font-bold text-ebot-charcoal shadow-glow transition hover:bg-ebot-primaryHover disabled:opacity-80"
         >
           {exporting ? <Loader2 className="size-4 animate-spin" /> : null}
           {exporting ? "Gerando..." : "Exportar"}

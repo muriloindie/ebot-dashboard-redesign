@@ -90,7 +90,7 @@ export function Modal({
   const content = (
     <div
       className={cn(
-        "fixed left-0 top-0 z-[100] flex h-[100dvh] min-h-screen w-screen items-center justify-center bg-clinical-charcoal/35 p-3 backdrop-blur-[10px] transition duration-300 ease-out sm:p-4",
+        "fixed left-0 top-0 z-[100] flex h-[100dvh] min-h-screen w-screen items-center justify-center bg-ebot-charcoal/35 p-3 backdrop-blur-[10px] transition duration-300 ease-out sm:p-4",
         visible ? "opacity-100" : "opacity-0"
       )}
       onClick={onClose}
@@ -102,7 +102,7 @@ export function Modal({
       <div
         ref={dialogRef}
         className={cn(
-          "max-h-[calc(100vh-24px)] w-full max-w-lg overflow-y-auto rounded-[28px] border border-clinical-border/[0.14] bg-clinical-surface/95 p-5 shadow-[0_30px_90px_rgba(17,23,22,0.22)] backdrop-blur-2xl transition duration-300 ease-out dark:border-white/[0.08] sm:max-h-[calc(100vh-32px)] sm:rounded-[32px] sm:p-6",
+          "max-h-[calc(100vh-24px)] w-full max-w-lg overflow-y-auto rounded-[28px] border border-ebot-border/[0.14] bg-ebot-surface/95 p-5 shadow-[0_30px_90px_rgba(17,23,22,0.22)] backdrop-blur-2xl transition duration-300 ease-out dark:border-white/[0.08] sm:max-h-[calc(100vh-32px)] sm:rounded-[32px] sm:p-6",
           visible ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-[0.98] opacity-0",
           className
         )}
@@ -114,24 +114,24 @@ export function Modal({
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-3">
-            {Icon ? <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-clinical-blue/[0.10] text-clinical-blue"><Icon className="size-5" /></span> : null}
+            {Icon ? <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-ebot-primary/[0.10] text-ebot-primary"><Icon className="size-5" /></span> : null}
             <div className="min-w-0">
-              {eyebrow ? <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-clinical-blueText">{eyebrow}</p> : null}
-              <h2 id={titleId} className="text-xl font-extrabold tracking-[-0.03em] text-clinical-dark">{title}</h2>
-              {description ? <p id={descriptionId} className="mt-1 text-sm leading-5 text-clinical-muted">{description}</p> : null}
+              {eyebrow ? <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-ebot-primaryText">{eyebrow}</p> : null}
+              <h2 id={titleId} className="text-xl font-extrabold tracking-[-0.03em] text-ebot-dark">{title}</h2>
+              {description ? <p id={descriptionId} className="mt-1 text-sm leading-5 text-ebot-muted">{description}</p> : null}
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fechar janela"
-            className="flex size-10 items-center justify-center rounded-2xl bg-clinical-blue/10 text-clinical-blue transition hover:bg-clinical-blue hover:text-white"
+            className="flex size-10 items-center justify-center rounded-2xl bg-ebot-primary/10 text-ebot-primary transition hover:bg-ebot-primary hover:text-ebot-charcoal"
           >
             <X className="size-4" />
           </button>
         </div>
         {children}
-        {footer ? <div className="mt-6 border-t border-clinical-border/[0.12] pt-4">{footer}</div> : null}
+        {footer ? <div className="mt-6 border-t border-ebot-border/[0.12] pt-4">{footer}</div> : null}
       </div>
     </div>
   );

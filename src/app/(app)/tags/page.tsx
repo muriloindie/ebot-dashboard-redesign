@@ -1,2 +1,5 @@
-import { ModulePage } from "@/components/operations/ModulePage";
-export default function TagsRoute() { return <ModulePage module="tags" />; }
+import { TagsPage } from "@/components/operations/TagsPage";
+
+export default function TagsRoute() {
+  return <TagsPage />;
+}

@@ -8,15 +8,15 @@ test.describe("Módulo de automação", () => {
 
   test("fluxos-automacao renderiza lista de fluxos", async ({ page }) => {
     await page.goto("/fluxos-automacao");
-    await expect(page.locator("main.clinical-canvas")).toBeVisible();
+    await expect(page.locator("main.ebot-canvas")).toBeVisible();
     await expect(page.getByRole("heading", { name: /Fluxos de automa/ })).toBeVisible();
-    await expect(page.getByText("Primeira consulta").first()).toBeVisible();
+    await expect(page.getByText("Primeiro agendamento").first()).toBeVisible();
     await expect(page.getByRole("button", { name: /Novo fluxo/ }).first()).toBeVisible();
   });
 
   test("editor de fluxo renderiza canvas e paleta de nós", async ({ page }) => {
-    await page.goto("/fluxos-automacao/wf-primeira-consulta");
-    await expect(page.getByLabel("Nome do fluxo")).toHaveValue("Primeira consulta");
+    await page.goto("/fluxos-automacao/wf-primeira-agendamento");
+    await expect(page.getByLabel("Nome do fluxo")).toHaveValue("Primeiro agendamento");
     await expect(page.locator(".react-flow")).toBeVisible();
     await expect(page.getByText("Primeira mensagem").first()).toBeVisible();
   });
@@ -24,15 +24,15 @@ test.describe("Módulo de automação", () => {
   test("templates renderiza loja com grid", async ({ page }) => {
     await page.goto("/templates");
     await expect(page.getByRole("heading", { name: /Templates/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Confirmação de consulta D-1" })).toBeVisible();
-    await page.getByRole("button", { name: /Aplicar/ }).first().click();
-    await expect(page.getByText(/Aplicar "Confirmação de consulta D-1"/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Confirmação de agendamento D-1" })).toBeVisible();
+    await page.getByRole("button", { name: /Ver estrutura/ }).first().click();
+    await expect(page.getByRole("button", { name: "Editar template" })).toBeVisible();
   });
 
   test("base-conhecimento renderiza bases e abre detalhes", async ({ page }) => {
     await page.goto("/base-conhecimento");
     await expect(page.getByRole("heading", { name: "Base de conhecimento" })).toBeVisible();
-    await expect(page.getByText("Protocolos clínicos e orientações")).toBeVisible();
+    await expect(page.getByText("Protocolos comerciais e orientações")).toBeVisible();
     await page.getByRole("button", { name: "Gerenciar" }).first().click();
     await expect(page.getByText("Grafo de conhecimento")).toBeVisible();
   });
@@ -53,19 +53,24 @@ test.describe("Módulo de automação", () => {
     await page.goto("/respostas-rapidas");
     await page.getByRole("button", { name: "Nova resposta" }).click();
     const editor = page.getByLabel("Texto da resposta");
-    await page.getByTitle("Inserir {{nome_paciente}}").click();
-    await expect(editor).toContainText("{{nome_paciente}}");
+    await page.getByTitle("Inserir {{nome_cliente}}").click();
+    await expect(editor).toContainText("{{nome_cliente}}");
     await page.getByTitle("Inserir {{horario_atendimento}}").dragTo(editor);
     await expect(editor).toContainText("{{horario_atendimento}}");
-    await expect(editor).toContainText("{{nome_paciente}}");
+    await expect(editor).toContainText("{{nome_cliente}}");
     await expect(page.getByText("Detectadas no texto:")).toBeVisible();
   });
 
-  test("openai renderiza assistentes e abre configurações", async ({ page }) => {
+  test("openai gerencia prompts com fila e voz", async ({ page }) => {
     await page.goto("/openai");
-    await expect(page.getByRole("heading", { name: "OpenIA" })).toBeVisible();
-    await expect(page.getByText("Atendimento geral")).toBeVisible();
-    await page.getByRole("button", { name: "Configurar" }).first().click();
-    await expect(page.getByText("Persona e instruções iniciais")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "OpenAI — Prompts" })).toBeVisible();
+    await expect(page.getByText("Triagem de atendimento")).toBeVisible();
+    await page.getByRole("button", { name: "Adicionar Prompt" }).first().click();
+    await page.getByLabel("Nome").fill("Prompt de teste");
+    await page.getByLabel("API Key").fill("sk-teste");
+    await page.getByRole("textbox", { name: "Prompt" }).fill("Responda com objetividade.");
+    await expect(page.getByLabel("Voz")).toBeVisible();
+    await page.getByLabel("Voz").selectOption("voz");
+    await expect(page.getByLabel("Voz (OpenAI)")).toBeVisible();
   });
 });

@@ -61,15 +61,15 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "flex h-11 w-full items-center justify-between gap-2 rounded-2xl border px-3.5 text-[14px] font-bold transition duration-300 focus:outline-none focus:ring-2 focus:ring-clinical-blue/25",
+          "flex h-11 w-full min-w-0 items-center justify-between gap-2 overflow-hidden rounded-2xl border px-3.5 text-[14px] font-bold transition duration-300 focus:outline-none focus:ring-2 focus:ring-ebot-primary/25",
           open
-            ? "border-clinical-blue/30 bg-clinical-blue/10 text-clinical-blue"
-            : "border-clinical-border/[0.12] bg-clinical-surface/65 text-clinical-slate hover:border-clinical-blue/25 hover:text-clinical-blue"
+            ? "border-ebot-primary/30 bg-ebot-primary/10 text-ebot-primary"
+            : "border-ebot-border/[0.12] bg-ebot-surface/65 text-ebot-slate hover:border-ebot-primary/25 hover:text-ebot-primary"
         )}
       >
-        <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-clinical-muted/80">{label}</span>
-        <span className="text-clinical-dark">{value}</span>
-        <ChevronDown className={cn("size-3.5 shrink-0 transition", open ? "rotate-180 text-clinical-blue" : "text-clinical-muted")} />
+        <span className="min-w-0 truncate text-[13px] font-bold uppercase tracking-[0.08em] text-ebot-muted/80">{label}</span>
+        <span className="min-w-0 truncate text-ebot-dark">{value}</span>
+        <ChevronDown className={cn("size-3.5 shrink-0 transition", open ? "rotate-180 text-ebot-primary" : "text-ebot-muted")} />
       </button>
 
       {open && typeof document !== "undefined"
@@ -80,7 +80,7 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
               aria-label={label}
               onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); }}
               style={{ position: "fixed", top: coords.top, left: coords.left, zIndex: 9999 }}
-              className="min-w-[190px] origin-top rounded-2xl border border-clinical-border/[0.14] bg-clinical-surface/95 p-2 shadow-clinical backdrop-blur-xl dark:border-white/[0.08]"
+              className="min-w-[190px] origin-top rounded-2xl border border-ebot-border/[0.14] bg-ebot-surface/95 p-2 shadow-ebot backdrop-blur-xl dark:border-white/[0.08]"
             >
               {options.map((option) => {
                 const active = value === option;
@@ -96,7 +96,7 @@ export function Dropdown({ label, value, options, onChange, className }: Dropdow
                     }}
                     className={cn(
                       "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold transition",
-                      active ? "bg-clinical-blue/10 text-clinical-blueText" : "text-clinical-slate hover:bg-clinical-blue/[0.08] hover:text-clinical-blue"
+                      active ? "bg-ebot-primary/10 text-ebot-primaryText" : "text-ebot-slate hover:bg-ebot-primary/[0.08] hover:text-ebot-primary"
                     )}
                   >
                     {option}

@@ -7,6 +7,7 @@ import {
   seedExecutions,
   seedFiles,
   seedKnowledgeBases,
+  seedPrompts,
   seedQuickReplies,
   seedWorkflows
 } from "@/data/automationMock";
@@ -19,6 +20,7 @@ import type {
   FlowNode,
   FlowStatus,
   KnowledgeBase,
+  Prompt,
   QuickReply,
   Workflow
 } from "./types";
@@ -29,7 +31,8 @@ const KEYS = {
   quickReplies: "ebot-aut-quick-replies",
   knowledgeBases: "ebot-aut-knowledge-bases",
   files: "ebot-aut-files",
-  assistants: "ebot-aut-assistants"
+  assistants: "ebot-aut-assistants",
+  prompts: "ebot-aut-prompts"
 };
 
 function uid(prefix: string) {
@@ -255,4 +258,24 @@ export function saveAssistant(assistant: Assistant) {
   const assistants = listAssistants();
   const exists = assistants.some((item) => item.id === assistant.id);
   writeLocalCache(KEYS.assistants, exists ? assistants.map((item) => (item.id === assistant.id ? assistant : item)) : [assistant, ...assistants]);
+}
+
+// ---- Prompts (OpenAI: nome, API key, prompt, fila, voz, temperatura, tokens, histórico) ----
+
+export function listPrompts(): Prompt[] {
+  return readLocalCache<Prompt[]>(KEYS.prompts, seedPrompts);
+}
+
+export function newPromptId() {
+  return uid("prompt");
+}
+
+export function savePrompt(prompt: Prompt) {
+  const prompts = listPrompts();
+  const exists = prompts.some((item) => item.id === prompt.id);
+  writeLocalCache(KEYS.prompts, exists ? prompts.map((item) => (item.id === prompt.id ? prompt : item)) : [prompt, ...prompts]);
+}
+
+export function deletePrompt(id: string) {
+  writeLocalCache(KEYS.prompts, listPrompts().filter((prompt) => prompt.id !== id));
 }

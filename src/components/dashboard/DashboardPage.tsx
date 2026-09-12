@@ -1,39 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, CalendarCheck, Hourglass, MessageCircle, Moon, ShieldCheck, Timer, UserRoundCheck } from "lucide-react";
 import gsap from "gsap";
-import { metrics } from "@/data/dashboardMock";
-import { AppointmentTimeline } from "./AppointmentTimeline";
-import { AutomationInsights } from "./AutomationInsights";
-import { ContactReasons } from "./ContactReasons";
+import { animationsEnabled } from "@/lib/usePageEnter";
+import { CrmDashboard } from "./CrmDashboard";
 import { DashboardHeader } from "./DashboardHeader";
 import { ExportReportModal } from "./ExportReportModal";
-import { MetricCard } from "./MetricCard";
 import { NewFlowModal } from "./NewFlowModal";
-import { RecentConversations } from "./RecentConversations";
 import { SmartFilters } from "./SmartFilters";
 import type { DashboardFilters } from "./SmartFilters";
-import { TeamPerformanceTable } from "./TeamPerformanceTable";
-import { WaveLineChart } from "./WaveLineChart";
-import { RealtimeOperation } from "./RealtimeOperation";
-
-const iconMap: Record<string, React.ElementType> = {
-  MessageCircle,
-  Bot,
-  UserRoundCheck,
-  CalendarCheck,
-  Timer,
-  Hourglass,
-  ShieldCheck,
-  Moon
-};
 
 export function DashboardPage() {
   const ref = useRef<HTMLDivElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [newFlowOpen, setNewFlowOpen] = useState(false);
-  const [filters, setFilters] = useState<DashboardFilters>({ period: "Hoje", channel: "Todos", status: "Todos", unit: "Clínica Geral" });
+  const [filters, setFilters] = useState<DashboardFilters>({ period: "Hoje", channel: "Todos", status: "Todos", team: "Todas" });
 
   const filterFactor = (() => {
     let factor = filters.period === "7 dias" ? 0.84 : filters.period === "30 dias" ? 0.72 : filters.period === "Personalizado" ? 0.61 : 1;
@@ -41,16 +22,16 @@ export function DashboardPage() {
     if (filters.status === "Aguardando") factor *= 0.2;
     if (filters.status === "IA resolveu") factor *= 0.68;
     if (filters.status === "Humano assumiu") factor *= 0.32;
-    if (filters.unit !== "Clínica Geral") factor *= 0.46;
+    if (filters.team !== "Todas") factor *= 0.46;
     return Math.max(factor, 0.08);
   })();
 
   useEffect(() => {
-    if (!ref.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!ref.current || !animationsEnabled()) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo("[data-kpi-card]", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.055, delay: 0.2 });
-      gsap.fromTo("[data-chart-card]", { opacity: 0, scale: 0.985, y: 18 }, { opacity: 1, scale: 1, y: 0, duration: 0.75, ease: "power3.out", delay: 0.46 });
-      gsap.fromTo("[data-right-panel]", { opacity: 0, x: 28 }, { opacity: 1, x: 0, duration: 0.75, ease: "power3.out", delay: 0.52 });
+      gsap.fromTo("[data-kpi-card]", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.055, delay: 0.2, clearProps: "opacity,transform" });
+      gsap.fromTo("[data-chart-card]", { opacity: 0, scale: 0.985, y: 18 }, { opacity: 1, scale: 1, y: 0, duration: 0.75, ease: "power3.out", delay: 0.46, clearProps: "opacity,transform" });
+      gsap.fromTo("[data-dash-panel]", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.07, delay: 0.58, clearProps: "opacity,transform" });
     }, ref);
     return () => ctx.revert();
   }, []);
@@ -75,30 +56,7 @@ export function DashboardPage() {
     <div ref={ref} className="space-y-4 sm:space-y-5 lg:space-y-6">
       <DashboardHeader />
       <SmartFilters filters={filters} onChange={setFilters} />
-
-      <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-8 xl:gap-3">
-        {metrics.map((metric) => (
-          <MetricCard key={metric.id} metric={{ ...metric, value: Math.max(1, Math.round(metric.value * filterFactor)) }} icon={iconMap[metric.icon]} />
-        ))}
-      </section>
-
-      <section className="grid min-w-0 items-stretch gap-4 lg:gap-6 2xl:grid-cols-[minmax(0,0.92fr)_minmax(460px,0.72fr)]">
-        <WaveLineChart scale={filterFactor} />
-        <AppointmentTimeline />
-      </section>
-
-      <RealtimeOperation />
-
-      <section className="grid gap-4 lg:gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(380px,0.72fr)]">
-        <AutomationInsights />
-        <ContactReasons />
-      </section>
-
-      <section className="grid gap-4 lg:gap-6 2xl:grid-cols-[minmax(360px,0.85fr)_minmax(0,1.15fr)]">
-        <RecentConversations />
-        <TeamPerformanceTable />
-      </section>
-
+      <CrmDashboard scale={filterFactor} />
       <ExportReportModal open={exportOpen} onClose={() => setExportOpen(false)} />
       <NewFlowModal open={newFlowOpen} onClose={() => setNewFlowOpen(false)} />
     </div>
