@@ -1,0 +1,45 @@
+node_modules
+.next
+out
+dist
+build
+
+# Environment / local config
+.env
+.env.local
+.env*.local
+
+# Logs / build metadata
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+.next-start.log*
+playwright-report/
+
+# Local AI agent / skill tooling
+.agents/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.impeccable/
+.kiro/
+.opencode/
+.playwright/
+.playwright-cli/
+test-results/
+.vscode/
+opencode.json
+skills-lock.json
+
+# Generated AI test-planning artifacts
+seed.spec.ts
+specs/
+.github/agents/
+.github/workflows/copilot-setup-steps.yml
+
+# Graphify generated knowledge graphs and caches
+graphify-out/
+**/graphify-out/
